@@ -73,7 +73,6 @@ const getQuestionById = async (req, res) => {
     res.status(500).json({ message: "Server error" });
   }
 };
-
 const storeAnswerById = async (req, res) => {
   const { userId, questionId, optionSelected } = req.body;
 
@@ -81,15 +80,22 @@ const storeAnswerById = async (req, res) => {
     const db = getDb();
     const usersCollection = db.collection("users");
 
-    // Update the user document to append the response to the questionResponses array
+    // Update the user document to set the response if questionId already exists
+    // or add a new response if it doesn't exist
     await usersCollection.updateOne(
-      { _id: new ObjectId(userId) },
+      { _id: new ObjectId(userId), "questionResponses.questionId": questionId },
       {
-        $push: {
-          questionResponses: { questionId, optionSelected },
-        },
+        $set: { "questionResponses.$.optionSelected": optionSelected }
       },
-      { upsert: true } // Creates the document if it doesn't exist
+      { upsert: false } // Don't create a new document if userId doesn't exist
+    );
+
+    // If the questionId doesn't exist, push a new response
+    await usersCollection.updateOne(
+      { _id: new ObjectId(userId), "questionResponses.questionId": { $ne: questionId } },
+      {
+        $push: { questionResponses: { questionId, optionSelected } }
+      }
     );
 
     res.status(200).json({
@@ -100,6 +106,7 @@ const storeAnswerById = async (req, res) => {
     res.status(500).json({ message: "Server error" });
   }
 };
+
 
 
 const getSurveyResultsByQuestionId = async (req, res) => {
