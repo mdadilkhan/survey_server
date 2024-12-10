@@ -15,6 +15,7 @@ const addQuestion = async (req, res) => {
     optionId: option.optionId,
     optionText: option.optionText,
     optionPoint: option.optionPoint,
+    outcomePoint: option.outcomePoint,
     optionFrequency: option.optionFrequency || 0
   }));
 
@@ -38,6 +39,7 @@ const addQuestion = async (req, res) => {
     return res.status(500).json({ message: "Server error" });
   }
 };
+
 const getAllQuestion=async (req, res) => {
   try {
     const db = getDb();
@@ -73,6 +75,7 @@ const getQuestionById = async (req, res) => {
     res.status(500).json({ message: "Server error" });
   }
 };
+
 const storeAnswerById = async (req, res) => {
   const { userId, questionId, optionSelected } = req.body;
 
@@ -80,21 +83,27 @@ const storeAnswerById = async (req, res) => {
     const db = getDb();
     const usersCollection = db.collection("users");
 
+    // Get the current timestamp
+    const currentTime = new Date();
+
     // Update the user document to set the response if questionId already exists
-    // or add a new response if it doesn't exist
     await usersCollection.updateOne(
       { _id: new ObjectId(userId), "questionResponses.questionId": questionId },
       {
-        $set: { "questionResponses.$.optionSelected": optionSelected }
+        $set: {
+          "questionResponses.$.optionSelected": optionSelected,
+          updatedAt: currentTime, // Update the `updatedAt` field
+        }
       },
-      { upsert: false } // Don't create a new document if userId doesn't exist
+      { upsert: false }
     );
 
     // If the questionId doesn't exist, push a new response
     await usersCollection.updateOne(
       { _id: new ObjectId(userId), "questionResponses.questionId": { $ne: questionId } },
       {
-        $push: { questionResponses: { questionId, optionSelected } }
+        $push: { questionResponses: { questionId, optionSelected } },
+        $set: { updatedAt: currentTime } // Update the `updatedAt` field
       }
     );
 
@@ -106,8 +115,6 @@ const storeAnswerById = async (req, res) => {
     res.status(500).json({ message: "Server error" });
   }
 };
-
-
 
 const getSurveyResultsByQuestionId = async (req, res) => {
   const { questionId } = req.params;
@@ -186,19 +193,27 @@ const getSurveyStatistics = async (req, res) => {
     const db = getDb();
     const usersCollection = db.collection("users");
 
-    // Find users who have at least one response in questionResponses
+    // Get the current date in the local timezone
+    const today = new Date();
+    today.setHours(0, 0, 0, 0); // Set to the start of the day
+
+    const tomorrow = new Date(today);
+    tomorrow.setDate(today.getDate() + 1); // Next day at midnight
+
+    // Find users who have at least one response in questionResponses and updated today
     const users = await usersCollection.find({
-      questionResponses: { $exists: true, $not: { $size: 0 } }
+      questionResponses: { $exists: true, $not: { $size: 0 } },
+      updatedAt: { $gte: today, $lt: tomorrow } // Filter based on today's date
     }).toArray();
 
     // Initialize counters
-    let totalResponses = 0;
+    let todaysResponses = 0;
     let undergraduateCount = 0;
     let postgraduateCount = 0;
 
     // Loop through users and count based on course type
     users.forEach(user => {
-      totalResponses += 1; // Each user with responses is counted as a completed survey
+      todaysResponses += 1; // Each user updated today is counted
       if (user.course === "undergraduate") {
         undergraduateCount += 1;
       } else if (user.course === "postgraduate") {
@@ -209,7 +224,7 @@ const getSurveyStatistics = async (req, res) => {
     // Construct response
     res.status(200).json({
       message: "Survey statistics retrieved successfully",
-      totalResponses: totalResponses,
+      todaysResponses: todaysResponses, // Count of today's responses
       undergraduate: undergraduateCount,
       postgraduate: postgraduateCount
     });
@@ -219,4 +234,305 @@ const getSurveyStatistics = async (req, res) => {
   }
 };
 
-module.exports = {addQuestion, getAllQuestion, getQuestionById, storeAnswerById , getSurveyResultsByQuestionId , getSurveyStatistics};
+const getLimitedUnderstandingJobOpportunities = async (req, res) => {
+  const { userId } = req.params;  // Assuming userId is passed in the request parameters
+
+  try {
+    const db = getDb();
+    const usersCollection = db.collection("users");
+
+    // Fetch the user's responses for the questions (Q1, Q2, Q3)
+    const user = await usersCollection.findOne({ _id: new ObjectId(userId) });
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    // Extract the responses for questions 1, 2, and 3
+    const question1Response = user.questionResponses.find((response) => response.questionId === "1");
+    const question2Response = user.questionResponses.find((response) => response.questionId === "2");
+    const question3Response = user.questionResponses.find((response) => response.questionId === "3");
+
+    // Initialize outcome points for each question
+    let q1OutcomePoints = 0;
+    let q2OutcomePoints = 0;
+    let q3OutcomePoints = 0;
+
+    // Calculate outcome points for Q1 (only one option selected)
+    if (question1Response) {
+      const option = question1Response.optionSelected[0];  // Assuming only one option is selected for Q1
+      const question1 = await db.collection("questions").findOne({ questionId: "1" });
+      const option1 = question1.options.find((opt) => opt.optionId === option);
+      q1OutcomePoints = option1 ? option1.outcomePoint : 0;
+    }
+
+    // Calculate outcome points for Q2 (4 options selected)
+    if (question2Response) {
+      const question2 = await db.collection("questions").findOne({ questionId: "2" });
+      for (let optionId of question2Response.optionSelected) {
+        const option2 = question2.options.find((opt) => opt.optionId === optionId);
+        q2OutcomePoints += option2 ? option2.outcomePoint : 0;
+      }
+    }
+
+    // Calculate outcome points for Q3 (4 options selected)
+    if (question3Response) {
+      const question3 = await db.collection("questions").findOne({ questionId: "3" });
+      for (let optionId of question3Response.optionSelected) {
+        const option3 = question3.options.find((opt) => opt.optionId === optionId);
+        q3OutcomePoints += option3 ? option3.outcomePoint : 0;
+      }
+    }
+
+    const question1Outcome = q1OutcomePoints * 0.4;
+    const question2Outcome = (q2OutcomePoints/4 )* 0.3;
+    const question3Outcome = (q3OutcomePoints/4)*0.3;
+
+    // Calculate the total outcome points from Q1, Q2, and Q3
+    const totalOutcomePoints = question1Outcome + question2Outcome + question3Outcome;
+
+    // Return the result
+    res.status(200).json({
+      message: "Outcome points calculated successfully",
+      data: {
+        question1Outcome,
+        question2Outcome,
+        question3Outcome,
+        totalOutcomePoints,
+      },
+    });
+  } catch (error) {
+    console.error("Error fetching outcome points:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+const getLackOfSkillsAndPreparedness = async (req, res) => {
+  const { userId } = req.params;  // Assuming userId is passed in the request parameters
+
+  try {
+    const db = getDb();
+    const usersCollection = db.collection("users");
+
+    // Fetch the user's responses for the questions (Q4, Q5, Q10)
+    const user = await usersCollection.findOne({ _id: new ObjectId(userId) });
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    // Extract the responses for questions 4, 5, and 10
+    const question4Response = user.questionResponses.find((response) => response.questionId === "4");
+    const question5Response = user.questionResponses.find((response) => response.questionId === "5");
+    const question10Response = user.questionResponses.find((response) => response.questionId === "10");
+
+    // Initialize outcome points for each question
+    let q4OutcomePoints = 0;
+    let q5OutcomePoints = 0;
+    let q10OutcomePoints = 0;
+
+    // Calculate outcome points for Q4 (only one option selected)
+    if (question4Response) {
+      const option = question4Response.optionSelected[0];  // Assuming only one option is selected for Q4
+      const question4 = await db.collection("questions").findOne({ questionId: "4" });
+      const option4 = question4.options.find((opt) => opt.optionId === option);
+      q4OutcomePoints = option4 ? option4.outcomePoint : 0;
+    }
+
+    // Calculate outcome points for Q5 (only one option selected)
+    if (question5Response) {
+      const option = question5Response.optionSelected[0];  // Assuming only one option is selected for Q5
+      const question5 = await db.collection("questions").findOne({ questionId: "5" });
+      const option5 = question5.options.find((opt) => opt.optionId === option);
+      q5OutcomePoints = option5 ? option5.outcomePoint : 0;
+    }
+
+    // Calculate outcome points for Q10 (only one option selected)
+    if (question10Response) {
+      const option = question10Response.optionSelected[0];  // Assuming only one option is selected for Q10
+      const question10 = await db.collection("questions").findOne({ questionId: "10" });
+      const option10 = question10.options.find((opt) => opt.optionId === option);
+      q10OutcomePoints = option10 ? option10.outcomePoint : 0;
+    }
+
+    // Calculate the weighted outcomes for each question
+    const question4Outcome = q4OutcomePoints * 0.4;
+    const question5Outcome = q5OutcomePoints * 0.3;
+    const question10Outcome = q10OutcomePoints * 0.3;
+
+    // Calculate the total outcome points from Q4, Q5, and Q10
+    const totalOutcomePoints = question4Outcome + question5Outcome + question10Outcome;
+
+    // Return the result
+    res.status(200).json({
+      message: "Outcome points for Lack of Skills and Preparedness calculated successfully",
+      data: {
+        question4Outcome,
+        question5Outcome,
+        question10Outcome,
+        totalOutcomePoints,
+      },
+    });
+  } catch (error) {
+    console.error("Error fetching outcome points:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+const getConfusionAboutBranchesAndAlignment = async (req, res) => {
+  const { userId } = req.params;  // Assuming userId is passed in the request parameters
+
+  try {
+    const db = getDb();
+    const usersCollection = db.collection("users");
+
+    // Fetch the user's responses for the questions (Q2, Q6, Q13)
+    const user = await usersCollection.findOne({ _id: new ObjectId(userId) });
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    // Extract the responses for questions 2, 6, and 13
+    const question2Response = user.questionResponses.find((response) => response.questionId === "2");
+    const question6Response = user.questionResponses.find((response) => response.questionId === "6");
+    const question13Response = user.questionResponses.find((response) => response.questionId === "13");
+
+    // Initialize outcome points for each question
+    let q2OutcomePoints = 0;
+    let q6OutcomePoints = 0;
+    let q13OutcomePoints = 0;
+
+    // Calculate outcome points for Q2 (only one option selected)
+    if (question2Response) {
+      const option = question2Response.optionSelected[0];  // Assuming only one option is selected for Q2
+      const question2 = await db.collection("questions").findOne({ questionId: "2" });
+      const option2 = question2.options.find((opt) => opt.optionId === option);
+      q2OutcomePoints = option2 ? option2.outcomePoint : 0;
+    }
+
+    // Calculate outcome points for Q6 (only one option selected)
+    if (question6Response) {
+      const option = question6Response.optionSelected[0];  // Assuming only one option is selected for Q6
+      const question6 = await db.collection("questions").findOne({ questionId: "6" });
+      const option6 = question6.options.find((opt) => opt.optionId === option);
+      q6OutcomePoints = option6 ? option6.outcomePoint : 0;
+    }
+
+    // Calculate outcome points for Q13 (only one option selected)
+    if (question13Response) {
+      const option = question13Response.optionSelected[0];  // Assuming only one option is selected for Q13
+      const question13 = await db.collection("questions").findOne({ questionId: "13" });
+      const option13 = question13.options.find((opt) => opt.optionId === option);
+      q13OutcomePoints = option13 ? option13.outcomePoint : 0;
+    }
+
+    // Calculate the weighted outcomes for each question
+    const question2Outcome = q2OutcomePoints * 0.35;
+    const question6Outcome = q6OutcomePoints * 0.35;
+    const question13Outcome = q13OutcomePoints * 0.3;
+
+    // Calculate the total outcome points from Q2, Q6, and Q13
+    const totalOutcomePoints = question2Outcome + question6Outcome + question13Outcome;
+
+    // Return the result
+    res.status(200).json({
+      message: "Outcome points for Confusion About Branches & Alignment calculated successfully",
+      data: {
+        question2Outcome,
+        question6Outcome,
+        question13Outcome,
+        totalOutcomePoints,
+      },
+    });
+  } catch (error) {
+    console.error("Error fetching outcome points:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+const getInternshipSelectionForJobReadiness = async (req, res) => {
+  const { userId } = req.params;  // Assuming userId is passed in the request parameters
+
+  try {
+    const db = getDb();
+    const usersCollection = db.collection("users");
+
+    // Fetch the user's responses for the questions (Q5, Q9, Q10, Q12)
+    const user = await usersCollection.findOne({ _id: new ObjectId(userId) });
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    // Extract the responses for questions 5, 9, 10, and 12
+    const question5Response = user.questionResponses.find((response) => response.questionId === "5");
+    const question9Response = user.questionResponses.find((response) => response.questionId === "9");
+    const question10Response = user.questionResponses.find((response) => response.questionId === "10");
+    const question12Response = user.questionResponses.find((response) => response.questionId === "12");
+
+    // Initialize outcome points for each question
+    let q5OutcomePoints = 0;
+    let q9OutcomePoints = 0;
+    let q10OutcomePoints = 0;
+    let q12OutcomePoints = 0;
+
+    // Calculate outcome points for Q5 (only one option selected)
+    if (question5Response) {
+      const option = question5Response.optionSelected[0];  // Assuming only one option is selected for Q5
+      const question5 = await db.collection("questions").findOne({ questionId: "5" });
+      const option5 = question5.options.find((opt) => opt.optionId === option);
+      q5OutcomePoints = option5 ? option5.outcomePoint : 0;
+    }
+
+    // Calculate outcome points for Q9 (only one option selected)
+    if (question9Response) {
+      const option = question9Response.optionSelected[0];  // Assuming only one option is selected for Q9
+      const question9 = await db.collection("questions").findOne({ questionId: "9" });
+      const option9 = question9.options.find((opt) => opt.optionId === option);
+      q9OutcomePoints = option9 ? option9.outcomePoint : 0;
+    }
+
+    // Calculate outcome points for Q10 (only one option selected)
+    if (question10Response) {
+      const option = question10Response.optionSelected[0];  // Assuming only one option is selected for Q10
+      const question10 = await db.collection("questions").findOne({ questionId: "10" });
+      const option10 = question10.options.find((opt) => opt.optionId === option);
+      q10OutcomePoints = option10 ? option10.outcomePoint : 0;
+    }
+
+    // Calculate outcome points for Q12 (only one option selected)
+    if (question12Response) {
+      const option = question12Response.optionSelected[0];  // Assuming only one option is selected for Q12
+      const question12 = await db.collection("questions").findOne({ questionId: "12" });
+      const option12 = question12.options.find((opt) => opt.optionId === option);
+      q12OutcomePoints = option12 ? option12.outcomePoint : 0;
+    }
+
+    // Calculate the weighted outcomes for each question
+    const question5Outcome = q5OutcomePoints * 0.25;
+    const question9Outcome = (q9OutcomePoints/4) * 0.3;
+    const question10Outcome = q10OutcomePoints * 0.25;
+    const question12Outcome = q12OutcomePoints * 0.2;
+
+    // Calculate the total outcome points from Q5, Q9, Q10, and Q12
+    const totalOutcomePoints = question5Outcome + question9Outcome + question10Outcome + question12Outcome;
+
+    // Return the result
+    res.status(200).json({
+      message: "Outcome points for Internship Selection for Job Readiness calculated successfully",
+      data: {
+        question5Outcome,
+        question9Outcome,
+        question10Outcome,
+        question12Outcome,
+        totalOutcomePoints,
+      },
+    });
+  } catch (error) {
+    console.error("Error fetching outcome points:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+module.exports = {addQuestion, getAllQuestion, getQuestionById, storeAnswerById , getSurveyResultsByQuestionId , getSurveyStatistics , getLimitedUnderstandingJobOpportunities , getLackOfSkillsAndPreparedness , getConfusionAboutBranchesAndAlignment , getInternshipSelectionForJobReadiness};

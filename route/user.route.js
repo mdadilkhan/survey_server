@@ -1,6 +1,6 @@
 const express = require('express');
 const authenticateToken = require('../middleware/authToken.middleware');
-const { userDetails, getUserDetails, contactSupport} = require('../controller/user.controller');
+const { userDetails, getUserDetails, contactSupport, bookSlot, createOrder, verifyOrder} = require('../controller/user.controller');
 // Import the controllers
 
 
@@ -11,7 +11,10 @@ const userRouter = express.Router();
 
 userRouter.get('/user/userDetails', authenticateToken, userDetails);
 userRouter.get('/getUserDetails/:id', getUserDetails);
+userRouter.get('/bookslot', bookSlot);
 userRouter.post('/contactSupport',contactSupport)
+userRouter.post('/payment/createOrder', createOrder);
+userRouter.post('/payment/verifyOrder', verifyOrder);
 
 // Export the router
 module.exports = userRouter;

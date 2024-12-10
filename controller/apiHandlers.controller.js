@@ -348,6 +348,9 @@ const register = async (req, res) => {
       school,
       course,
       year, 
+      slot: "",   // Default empty string for slot
+      mode: "",   // Default empty string for mode
+      date: null, // Store null if the date is not yet assigned
       createdAt: new Date(), // Add the `createdAt` timestamp
       updatedAt: new Date()  // Add the `updatedAt` timestamp
     };
@@ -420,5 +423,5 @@ module.exports = {
   register,
   uploadImage,
   insertEmail,
-  login
+  login,
 };
