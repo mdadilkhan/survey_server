@@ -116,11 +116,12 @@ const contactSupport = async (req, res) => {
 };
 
 const bookSlot = async (req, res) => {
-  const { userId , slot, mode, date } = req.body; // Assuming these fields are passed in the request body
+  const { userId, slot, mode, date } = req.body; // Assuming these fields are passed in the request body
 
   try {
     const db = getDb(); // Get MongoDB instance
     const usersCollection = db.collection("users");
+    const slotsCollection = db.collection("slots"); // Assuming you have a slots collection
 
     // Validate inputs
     if (!slot || !mode || !date) {
@@ -137,6 +138,22 @@ const bookSlot = async (req, res) => {
     const user = await usersCollection.findOne({ _id: new ObjectId(userId) });
     if (!user) {
       return res.status(404).json({ message: "User not found." });
+    }
+
+    // Check if the slot exists in the slots collection
+    const slotRecord = await slotsCollection.findOne({ date, time: slot, mode });
+    if (!slotRecord) {
+      return res.status(404).json({ message: "Slot not found for the specified date and time." });
+    }
+
+    // Check if the slot is available
+    if (!slotRecord.isAvailable) {
+      return res.status(400).json({ message: "The selected slot is no longer available." });
+    }
+
+    // Check if there is availability (count > 0)
+    if (slotRecord.count <= 0) {
+      return res.status(400).json({ message: "The slot is fully booked." });
     }
 
     // Update the user's slot, mode, and date
@@ -156,10 +173,22 @@ const bookSlot = async (req, res) => {
       return res.status(400).json({ message: "Failed to update the user's slot." });
     }
 
+    // Decrease the count of the slot in the slots collection
+    await slotsCollection.updateOne(
+      { date, time: slot, mode },
+      {
+        $inc: { count: -1 }, // Decrease the count by 1
+        $set: { isAvailable: slotRecord.count - 1 <= 0 ? false : slotRecord.isAvailable }, // Set isAvailable to false if count is 0
+      }
+    );
+
+    // Fetch the updated slot details
+    const updatedSlot = await slotsCollection.findOne({ date, time: slot, mode });
+
     // Fetch the updated user details
     const updatedUser = await usersCollection.findOne({ _id: new ObjectId(userId) });
 
-    // Respond with the updated user details
+    // Respond with the updated user details and slot information
     return res.status(200).json({
       message: "Slot booked/updated successfully.",
       user: {
@@ -314,7 +343,6 @@ const createSlots = async (req, res) => {
     return res.status(500).json({ message: "Internal Server Error" });
   }
 };
-
 
 const getAllSlots = async (req, res) => {
   try {
