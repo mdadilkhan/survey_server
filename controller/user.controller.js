@@ -265,11 +265,89 @@ const verifyOrder = async (req, res) => {
   }
 };
 
+const createSlots = async (req, res) => {
+  try {
+    const { date, time, mode, info, isAvailable, count } = req.body;
+
+    if (!date || !time || !mode || info === undefined || count === undefined) {
+      return res
+        .status(400)
+        .json({ message: "All fields (date, time, mode, info, count) are required." });
+    }
+
+    const db = getDb(); // Get the database connection
+
+    const newSlot = {
+      date,
+      time,
+      mode,
+      info,
+      isAvailable: isAvailable ?? true, // Default to true if not provided
+      count,
+    };
+
+    // Insert the new slot into the slots collection
+    const result = await db.collection("slots").insertOne(newSlot);
+
+    return res.status(201).json({
+      message: "Slot created successfully.",
+      slot: result.ops[0], // Return the created slot
+    });
+  } catch (error) {
+    console.error("Error creating slot:", error);
+    res.status(500).json({ message: "Internal Server Error" });
+  }
+};
+
+const getAllSlots = async (req, res) => {
+  try {
+    const db = getDb(); // Get the database connection
+
+    const currentDate = moment(); // Get the current date and time
+    const slots = await db.collection("slots").find().toArray();
+
+    const updatedSlots = slots.map((slot) => {
+      const slotDate = moment(slot.date, "DD/MM/YYYY");
+      const slotTime = moment(slot.time.split(" - ")[1], "hh:mm A");
+      const slotDateTime = slotDate.set({
+        hour: slotTime.hour(),
+        minute: slotTime.minute(),
+      });
+
+      // Check conditions to update `info` and `isAvailable`
+      if (currentDate.isAfter(slotDateTime)) {
+        slot.isAvailable = false; // Slot is not available if time has passed
+      } else if (currentDate.isSameOrAfter(slotDate.clone().add(2, "days"))) {
+        slot.info = 1; // If currentDate is after two days of the slot's date, `info` is 1
+      }
+
+      if (slot.count >= 15) {
+        slot.isAvailable = false; // If count is 15, slot is unavailable
+      }
+
+      if (!slot.isAvailable) {
+        slot.info = 0; // If slot is unavailable, set `info` to 0
+      }
+
+      return slot;
+    });
+
+    return res
+      .status(200)
+      .json({ message: "Slots retrieved successfully.", slots: updatedSlots });
+  } catch (error) {
+    console.error("Error retrieving slots:", error);
+    res.status(500).json({ message: "Internal Server Error" });
+  }
+};
+
 module.exports = {
   userDetails,
   getUserDetails,
   contactSupport,
   bookSlot,
   createOrder,
-  verifyOrder
+  verifyOrder,
+  createSlots,
+  getAllSlots
 };
