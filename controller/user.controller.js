@@ -266,38 +266,55 @@ const verifyOrder = async (req, res) => {
 };
 
 const createSlots = async (req, res) => {
-  try {
-    const { date, time, mode, info, isAvailable, count } = req.body;
+  const { date, time, mode, count } = req.body;
 
-    if (!date || !time || !mode || info === undefined || count === undefined) {
-      return res
-        .status(400)
-        .json({ message: "All fields (date, time, mode, info, count) are required." });
+  try {
+    // Validate required fields
+    if (!date || !time || !mode || count === undefined) {
+      return res.status(400).json({ message: "Missing required fields." });
     }
 
-    const db = getDb(); // Get the database connection
+    // Validate `time` format
+    const timeParts = time.split(" - ");
+    if (timeParts.length !== 2) {
+      return res.status(400).json({ message: "Invalid time format. Use 'HH:MM AM/PM - HH:MM AM/PM'." });
+    }
 
-    const newSlot = {
+    const [startTime, endTime] = timeParts;
+
+    // Ensure the slot doesn't already exist
+    const db = getDb();
+    const existingSlot = await db.collection("slots").findOne({
       date,
       time,
       mode,
-      info,
-      isAvailable: isAvailable ?? true, // Default to true if not provided
-      count,
+    });
+
+    if (existingSlot) {
+      return res.status(400).json({ message: "Slot already exists." });
+    }
+
+    // Create the slot object
+    const slot = {
+      date,
+      time,
+      mode,
+      info: 0, // Default info
+      isAvailable: true, // Default availability
+      count: count || 0, // Default count
+      createdAt: new Date(),
     };
 
-    // Insert the new slot into the slots collection
-    const result = await db.collection("slots").insertOne(newSlot);
+    // Insert the new slot into the database
+    await db.collection("slots").insertOne(slot);
 
-    return res.status(201).json({
-      message: "Slot created successfully.",
-      slot: result.ops[0], // Return the created slot
-    });
+    return res.status(201).json({ message: "Slot created successfully.", slot });
   } catch (error) {
     console.error("Error creating slot:", error);
-    res.status(500).json({ message: "Internal Server Error" });
+    return res.status(500).json({ message: "Internal Server Error" });
   }
 };
+
 
 const getAllSlots = async (req, res) => {
   try {
