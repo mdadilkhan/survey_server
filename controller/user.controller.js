@@ -1,6 +1,7 @@
 const { ObjectId } = require("mongodb");
 const { getDb } = require("../db/db");
 const moment = require("moment");
+const crypto =require('crypto')
 const { sendTemplatedEmail } = require("../SES/ses.js");
 const Razorpay = require("razorpay");
 const { v4: uuidv4 } = require("uuid");
@@ -116,6 +117,8 @@ const contactSupport = async (req, res) => {
 };
 
 const bookSlot = async (req, res) => {
+  console.log("called");
+  
   const { userId, slot, mode, date } = req.body; // Assuming these fields are passed in the request body
 
   try {
