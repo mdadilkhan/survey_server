@@ -133,10 +133,6 @@ const bookSlot = async (req, res) => {
 
     // Parse the date to ensure it's a valid Date object
     const parsedDate = new Date(date);
-    if (isNaN(parsedDate)) {
-      return res.status(400).json({ message: "Invalid date format." });
-    }
-
     // Check if the user exists
     const user = await usersCollection.findOne({ _id: new ObjectId(userId) });
     if (!user) {

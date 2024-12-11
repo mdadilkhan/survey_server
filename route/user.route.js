@@ -11,7 +11,7 @@ const userRouter = express.Router();
 
 userRouter.get('/user/userDetails', authenticateToken, userDetails);
 userRouter.get('/getUserDetails/:id', getUserDetails);
-userRouter.get('/bookslot', bookSlot);
+userRouter.post('/bookslot', bookSlot);
 userRouter.post('/contactSupport',contactSupport)
 userRouter.post('/payment/createOrder', createOrder);
 userRouter.post('/payment/verifyOrder', verifyOrder);
