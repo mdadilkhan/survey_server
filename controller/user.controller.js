@@ -117,7 +117,6 @@ const contactSupport = async (req, res) => {
 };
 
 const bookSlot = async (req, res) => {
-  console.log("called");
   
   const { userId, slot, mode, date } = req.body; // Assuming these fields are passed in the request body
 
@@ -128,7 +127,9 @@ const bookSlot = async (req, res) => {
 
     // Validate inputs
     if (!slot || !mode || !date) {
-      return res.status(400).json({ message: "Slot, mode, and date are required." });
+      return res
+        .status(400)
+        .json({ message: "Slot, mode, and date are required." });
     }
 
     // Parse the date to ensure it's a valid Date object
@@ -140,14 +141,15 @@ const bookSlot = async (req, res) => {
     }
 
     // Check if the slot exists in the slots collection
-    const slotRecord = await slotsCollection.findOne({ date, time: slot, mode });
+    const slotRecord = await slotsCollection.findOne({
+      date,
+      time: slot,
+      mode,
+    });
     if (!slotRecord) {
-      return res.status(404).json({ message: "Slot not found for the specified date and time." });
-    }
-
-    // Check if the slot is available
-    if (!slotRecord.isAvailable) {
-      return res.status(400).json({ message: "The selected slot is no longer available." });
+      return res
+        .status(404)
+        .json({ message: "Slot not found for the specified date and time." });
     }
 
     // Check if there is availability (count > 0)
@@ -169,7 +171,9 @@ const bookSlot = async (req, res) => {
     );
 
     if (updateResult.matchedCount === 0) {
-      return res.status(400).json({ message: "Failed to update the user's slot." });
+      return res
+        .status(400)
+        .json({ message: "Failed to update the user's slot." });
     }
 
     // Decrease the count of the slot in the slots collection
@@ -177,15 +181,35 @@ const bookSlot = async (req, res) => {
       { date, time: slot, mode },
       {
         $inc: { count: -1 }, // Decrease the count by 1
-        $set: { isAvailable: slotRecord.count - 1 <= 0 ? false : slotRecord.isAvailable }, // Set isAvailable to false if count is 0
+        $set: {
+          count: Math.max(0, slotRecord.count - 1), // Ensure count doesn't go below 0
+          info: (() => {
+            const updatedCount = slotRecord.count - 1;
+
+            // Logic for mode: online
+            if (mode === "online") {
+              if (updatedCount === 10) return 1;
+              if (updatedCount === 4) return 2;
+              if (updatedCount <= 0) return 0;
+            }
+
+            // Logic for mode: offline
+            if (mode === "offline") {
+              if (updatedCount === 15) return 1;
+              if (updatedCount === 8) return 2;
+              if (updatedCount <= 0) return 0;
+            }
+
+            return slotRecord.info; // Default to current info if no conditions match
+          })(),
+        },
       }
     );
 
-    // Fetch the updated slot details
-    const updatedSlot = await slotsCollection.findOne({ date, time: slot, mode });
-
     // Fetch the updated user details
-    const updatedUser = await usersCollection.findOne({ _id: new ObjectId(userId) });
+    const updatedUser = await usersCollection.findOne({
+      _id: new ObjectId(userId),
+    });
 
     // Respond with the updated user details and slot information
     return res.status(200).json({
@@ -294,11 +318,11 @@ const verifyOrder = async (req, res) => {
 };
 
 const createSlots = async (req, res) => {
-  const { date, time, mode, count } = req.body;
+  const { date, time, mode } = req.body;
 
   try {
     // Validate required fields
-    if (!date || !time || !mode || count === undefined) {
+    if (!date || !time || !mode ) {
       return res.status(400).json({ message: "Missing required fields." });
     }
 
@@ -307,8 +331,6 @@ const createSlots = async (req, res) => {
     if (timeParts.length !== 2) {
       return res.status(400).json({ message: "Invalid time format. Use 'HH:MM AM/PM - HH:MM AM/PM'." });
     }
-
-    const [startTime, endTime] = timeParts;
 
     // Ensure the slot doesn't already exist
     const db = getDb();
@@ -327,9 +349,8 @@ const createSlots = async (req, res) => {
       date,
       time,
       mode,
-      info: 0, // Default info
-      isAvailable: true, // Default availability
-      count: count || 0, // Default count
+      info: 3, // Default info
+      count: mode == "offline" ? 15 : 25, // Default count
       createdAt: new Date(),
     };
 
@@ -358,19 +379,9 @@ const getAllSlots = async (req, res) => {
         minute: slotTime.minute(),
       });
 
-      // Check conditions to update `info` and `isAvailable`
+      // Set `info` to 3 if the current date and time are after the slot's date and time
       if (currentDate.isAfter(slotDateTime)) {
-        slot.isAvailable = false; // Slot is not available if time has passed
-      } else if (currentDate.isSameOrAfter(slotDate.clone().add(2, "days"))) {
-        slot.info = 1; // If currentDate is after two days of the slot's date, `info` is 1
-      }
-
-      if (slot.count >= 15) {
-        slot.isAvailable = false; // If count is 15, slot is unavailable
-      }
-
-      if (!slot.isAvailable) {
-        slot.info = 0; // If slot is unavailable, set `info` to 0
+        slot.info = 0;
       }
 
       return slot;
