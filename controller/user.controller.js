@@ -117,7 +117,6 @@ const contactSupport = async (req, res) => {
 };
 
 const bookSlot = async (req, res) => {
-  
   const { userId, slot, mode, date } = req.body; // Assuming these fields are passed in the request body
 
   try {
@@ -134,6 +133,7 @@ const bookSlot = async (req, res) => {
 
     // Parse the date to ensure it's a valid Date object
     const parsedDate = new Date(date);
+
     // Check if the user exists
     const user = await usersCollection.findOne({ _id: new ObjectId(userId) });
     if (!user) {
@@ -176,32 +176,35 @@ const bookSlot = async (req, res) => {
         .json({ message: "Failed to update the user's slot." });
     }
 
+    console.log("Slot record before update:", slotRecord);
+
     // Decrease the count of the slot in the slots collection
+    const updatedCount = Math.max(0, slotRecord.count - 1); // Ensure count doesn't go below 0
+    const updatedInfo = (() => {
+      // Logic for mode: online
+      if (mode === "online") {
+        if (updatedCount <= 17 && updatedCount >= 9) return 1;
+        if (updatedCount < 9 && updatedCount > 0) return 2;
+        if (updatedCount == 0) return 0;
+      }
+
+      // Logic for mode: offline
+      if (mode === "offline") {
+        if (updatedCount <= 11 && updatedCount >= 5) return 1;
+        if (updatedCount < 5 && updatedCount > 0) return 2;
+        if (updatedCount <= 0) return 0;
+      }
+
+      return slotRecord.info; // Default to current info if no conditions match
+    })();
+
+    // Update the slot with new count and info
     await slotsCollection.updateOne(
       { date, time: slot, mode },
       {
-        $inc: { count: -1 }, // Decrease the count by 1
         $set: {
-          count: Math.max(0, slotRecord.count - 1), // Ensure count doesn't go below 0
-          info: (() => {
-            const updatedCount = slotRecord.count - 1;
-
-            // Logic for mode: online
-            if (mode === "online") {
-              if (updatedCount === 10) return 1;
-              if (updatedCount === 4) return 2;
-              if (updatedCount <= 0) return 0;
-            }
-
-            // Logic for mode: offline
-            if (mode === "offline") {
-              if (updatedCount === 15) return 1;
-              if (updatedCount === 8) return 2;
-              if (updatedCount <= 0) return 0;
-            }
-
-            return slotRecord.info; // Default to current info if no conditions match
-          })(),
+          count: updatedCount,
+          info: updatedInfo,
         },
       }
     );
@@ -232,6 +235,7 @@ const bookSlot = async (req, res) => {
     return res.status(500).json({ message: "Server error." });
   }
 };
+
 
 const createOrder = async (req, res) => {
   try {
