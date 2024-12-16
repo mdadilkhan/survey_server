@@ -5,7 +5,6 @@ const crypto =require('crypto')
 const { sendTemplatedEmail } = require("../SES/ses.js");
 const Razorpay = require("razorpay");
 const { v4: uuidv4 } = require("uuid");
-
 // const razorpay = new Razorpay({
 //   key_id: "rzp_test_IqmS1BltCU4SFU",
 //   key_secret: "tJA2Z7X9lDyG8FHfmZ6J2qv6",
@@ -124,7 +123,8 @@ const contactSupport = async (req, res) => {
 
 const bookSlot = async (req, res) => {
   const { userId, slot, mode, date } = req.body; // Assuming these fields are passed in the request body
-
+  console.log(userId,slot,mode,date);
+  
   try {
     const db = getDb(); // Get MongoDB instance
     const usersCollection = db.collection("users");
@@ -152,6 +152,8 @@ const bookSlot = async (req, res) => {
       time: slot,
       mode,
     });
+    console.log("slot record",slotRecord);
+    
     if (!slotRecord) {
       return res
         .status(404)
@@ -221,6 +223,29 @@ const bookSlot = async (req, res) => {
     });
 
     // Respond with the updated user details and slot information
+
+    if(mode==='offline'){
+      console.log("inside offline");
+      
+      const templateData = {
+        name:  user.name,
+        date: slotRecord.date,
+        time: slotRecord.time,
+      };
+      sendTemplatedEmail([user.email],'OfflineWorkshop',templateData)
+    }
+    if(mode==='online'){
+      console.log("inside online");
+      
+      const templateData = {
+        name: user?.name,
+        date: slotRecord.date,
+        time: slotRecord.time,
+        link: slotRecord?.meetLink
+      };
+      sendTemplatedEmail([user.email],'OnlineWorkshop',templateData)
+    }
+
     return res.status(200).json({
       message: "Slot booked/updated successfully.",
       user: {
