@@ -6,9 +6,15 @@ const { sendTemplatedEmail } = require("../SES/ses.js");
 const Razorpay = require("razorpay");
 const { v4: uuidv4 } = require("uuid");
 
+// const razorpay = new Razorpay({
+//   key_id: "rzp_test_IqmS1BltCU4SFU",
+//   key_secret: "tJA2Z7X9lDyG8FHfmZ6J2qv6",
+// });
+
 const razorpay = new Razorpay({
-  key_id: "rzp_test_IqmS1BltCU4SFU",
-  key_secret: "tJA2Z7X9lDyG8FHfmZ6J2qv6",
+  key_id: 'rzp_live_IIwhdZvx1c4BGz',
+  key_secret: 'MKwPrI8XsBlj2cmzbuFnZ51s'
+  
 });
 
 const userDetails = async (req, res) => {
