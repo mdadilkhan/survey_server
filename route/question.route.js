@@ -1,7 +1,7 @@
 const express = require('express');
 
 const authenticateToken = require('../middleware/authToken.middleware');
-const {addQuestion, getAllQuestion, getQuestionById, storeAnswerById, getSurveyResultsByQuestionId, getSurveyStatistics, getLimitedUnderstandingJobOpportunities, getLackOfSkillsAndPreparedness, getConfusionAboutBranchesAndAlignment, getInternshipSelectionForJobReadiness} = require('../controller/question.controller');
+const {addQuestion, getAllQuestion, getQuestionById, storeAnswerById, getSurveyResultsByQuestionId, getSurveyStatistics, getLimitedUnderstandingJobOpportunities, getLackOfSkillsAndPreparedness, getConfusionAboutBranchesAndAlignment, getInternshipSelectionForJobReadiness, getCombinedOutcomePoints} = require('../controller/question.controller');
 
 const questionRouter = express.Router();
 
@@ -16,5 +16,6 @@ questionRouter.get('/question/limited-job/:userId',getLimitedUnderstandingJobOpp
 questionRouter.get('/question/lack-skill/:userId',getLackOfSkillsAndPreparedness)
 questionRouter.get('/question/confusion-branches/:userId',getConfusionAboutBranchesAndAlignment)
 questionRouter.get('/question/internship-selection/:userId',getInternshipSelectionForJobReadiness)
+questionRouter.get('/question/outcome/:userId',getCombinedOutcomePoints)
 
 module.exports = questionRouter;

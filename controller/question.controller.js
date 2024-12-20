@@ -129,10 +129,17 @@ const getSurveyResultsByQuestionId = async (req, res) => {
       return res.status(404).json({ message: "Question not found" });
     }
 
-    // Step 2: Fetch all user responses for the specific questionId from the "users" collection
+    // Get the current date in YYYY-MM-DD format
+    const today = new Date();
+    const todayDate = today.toISOString().split('T')[0]; // Extract date part
+
+    // Step 2: Fetch all user responses for the specific questionId from the "users" collection, filtered by date
     const users = await db
       .collection("users")
-      .find({ "questionResponses.questionId": questionId }, { projection: { questionResponses: 1 } })
+      .find({
+        "questionResponses.questionId": questionId,
+        updatedAt: { $regex: `^${todayDate}` }, // Match only the date part of updatedAt
+      }, { projection: { questionResponses: 1 } })
       .toArray();
 
     // Initialize counters for each option based on question data options
@@ -149,7 +156,7 @@ const getSurveyResultsByQuestionId = async (req, res) => {
       const questionResponse = user.questionResponses.find(response => response.questionId === questionId);
       if (questionResponse) {
         totalResponses += 1;
-        
+
         // Count each selected option
         questionResponse.optionSelected.forEach(optionId => {
           if (optionCounts.hasOwnProperty(optionId)) {
@@ -175,7 +182,7 @@ const getSurveyResultsByQuestionId = async (req, res) => {
 
     // Step 5: Send response with question details and calculated statistics
     res.status(200).json({
-      message: "Question data and survey results retrieved successfully",
+      message: "Question data and today's survey results retrieved successfully",
       questionId,
       questionText: questionData.questionText,
       selectionType: questionData.selectionType,
@@ -193,17 +200,14 @@ const getSurveyStatistics = async (req, res) => {
     const db = getDb();
     const usersCollection = db.collection("users");
 
-    // Get the current date in the local timezone
+    // Get the current date in YYYY-MM-DD format
     const today = new Date();
-    today.setHours(0, 0, 0, 0); // Set to the start of the day
+    const todayDate = today.toISOString().split('T')[0]; // Extract date part
 
-    const tomorrow = new Date(today);
-    tomorrow.setDate(today.getDate() + 1); // Next day at midnight
-
-    // Find users who have at least one response in questionResponses and updated today
+    // Find users who have at least one response in questionResponses and updated today (date only)
     const users = await usersCollection.find({
       questionResponses: { $exists: true, $not: { $size: 0 } },
-      updatedAt: { $gte: today, $lt: tomorrow } // Filter based on today's date
+      updatedAt: { $regex: `^${todayDate}` }, // Match only the date part of updatedAt
     }).toArray();
 
     // Initialize counters
@@ -535,4 +539,95 @@ const getInternshipSelectionForJobReadiness = async (req, res) => {
   }
 };
 
-module.exports = {addQuestion, getAllQuestion, getQuestionById, storeAnswerById , getSurveyResultsByQuestionId , getSurveyStatistics , getLimitedUnderstandingJobOpportunities , getLackOfSkillsAndPreparedness , getConfusionAboutBranchesAndAlignment , getInternshipSelectionForJobReadiness};
+const getCombinedOutcomePoints = async (req, res) => {
+  const { userId } = req.params; // Assuming userId is passed in the request parameters
+
+  try {
+    const db = getDb();
+    const usersCollection = db.collection("users");
+
+    // Fetch the user's responses
+    const user = await usersCollection.findOne({ _id: new ObjectId(userId) });
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    const calculateOutcomePoints = async (questionIds, weights) => {
+      let totalPoints = 0;
+
+      for (let i = 0; i < questionIds.length; i++) {
+        const questionId = questionIds[i];
+        const weight = weights[i];
+
+        const questionResponse = user.questionResponses.find(
+          (response) => response.questionId === questionId
+        );
+
+        if (questionResponse) {
+          const question = await db.collection("questions").findOne({ questionId });
+          const optionIds = questionResponse.optionSelected;
+          let questionPoints = 0;
+
+          for (let optionId of optionIds) {
+            const option = question.options.find((opt) => opt.optionId === optionId);
+            questionPoints += option ? option.outcomePoint : 0;
+          }
+
+          if (Array.isArray(optionIds) && optionIds.length > 1) {
+            questionPoints = questionPoints / optionIds.length; // Average for multiple options
+          }
+
+          totalPoints += questionPoints * weight;
+        }
+      }
+
+      return totalPoints;
+    };
+
+    // Calculate outcomes for each category
+    const limitedUnderstandingPoints = await calculateOutcomePoints(
+      ["1", "2", "3"],
+      [0.4, 0.3, 0.3]
+    );
+
+    const lackOfSkillsPoints = await calculateOutcomePoints(
+      ["4", "5", "10"],
+      [0.4, 0.3, 0.3]
+    );
+
+    const confusionAboutBranchesPoints = await calculateOutcomePoints(
+      ["2", "6", "13"],
+      [0.35, 0.35, 0.3]
+    );
+
+    const internshipSelectionPoints = await calculateOutcomePoints(
+      ["5", "9", "10", "12"],
+      [0.25, 0.3, 0.25, 0.2]
+    );
+
+    // Combine the results
+    const totalOutcomePoints = {
+      limitedUnderstandingPoints,
+      lackOfSkillsPoints,
+      confusionAboutBranchesPoints,
+      internshipSelectionPoints,
+      totalPoints:
+        limitedUnderstandingPoints +
+        lackOfSkillsPoints +
+        confusionAboutBranchesPoints +
+        internshipSelectionPoints,
+    };
+
+    // Return the result
+    res.status(200).json({
+      message: "Combined outcome points calculated successfully",
+      data: totalOutcomePoints,
+    });
+  } catch (error) {
+    console.error("Error fetching outcome points:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+module.exports = {addQuestion, getAllQuestion, getQuestionById, storeAnswerById , getSurveyResultsByQuestionId , getSurveyStatistics , getLimitedUnderstandingJobOpportunities , getLackOfSkillsAndPreparedness , getConfusionAboutBranchesAndAlignment , getInternshipSelectionForJobReadiness , getCombinedOutcomePoints};
