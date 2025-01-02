@@ -447,10 +447,26 @@ const getAllUniversities = async (req, res) => {
     // Fetch all universities from the "university" collection
     const universities = await db.collection("university").find({}).toArray();
 
-    // Return the list of universities
+    // Initialize an array to store universities with their total responses
+    const universitiesWithResponses = [];
+
+    for (const university of universities) {
+      // Count the total number of users with at least one questionResponse for the current university
+      const totalResponses = await db.collection("users").countDocuments({
+        school: university._id, // Assuming university._id is the unique identifier for a university
+        "questionResponses.0": { $exists: true }, // Check if questionResponses array is not empty
+      });
+
+      universitiesWithResponses.push({
+        ...university,
+        totalResponses,
+      });
+    }
+
+    // Return the list of universities with their total responses
     return res.status(200).json({
       message: "Universities fetched successfully.",
-      universities,
+      universities: universitiesWithResponses,
     });
   } catch (error) {
     console.error("Error fetching universities:", error);

@@ -762,12 +762,13 @@ const getCombinedOutcomePoints = async (req, res) => {
 
 const getUniversityLimitedUnderstandingJobOpportunities = async (req, res) => {
   const { universityId, year, course } = req.body;
+
   try {
     const db = getDb();
     const usersCollection = db.collection("users");
 
-    if(!universityId){
-      return res.status(404).json({ message: "University Id is required" });
+    if (!universityId) {
+      return res.status(400).json({ message: "University ID is required" });
     }
 
     const query = { school: universityId };
@@ -785,12 +786,13 @@ const getUniversityLimitedUnderstandingJobOpportunities = async (req, res) => {
     let totalUsers = 0;
 
     for (const user of users) {
-      // Extract responses for questions 1, 2, and 3
-      const question1Response = user.questionResponses.find((response) => response.questionId === "1");
-      const question2Response = user.questionResponses.find((response) => response.questionId === "2");
-      const question3Response = user.questionResponses.find((response) => response.questionId === "3");
+      // Ensure questionResponses exists and is an array
+      const questionResponses = Array.isArray(user.questionResponses) ? user.questionResponses : [];
 
-      // Initialize outcome points for each question
+      const question1Response = questionResponses.find((response) => response.questionId === "1");
+      const question2Response = questionResponses.find((response) => response.questionId === "2");
+      const question3Response = questionResponses.find((response) => response.questionId === "3");
+
       let q1OutcomePoints = 0;
       let q2OutcomePoints = 0;
       let q3OutcomePoints = 0;
@@ -799,7 +801,7 @@ const getUniversityLimitedUnderstandingJobOpportunities = async (req, res) => {
       if (question1Response) {
         const option = question1Response.optionSelected[0];
         const question1 = await db.collection("questions").findOne({ questionId: "1" });
-        const option1 = question1.options.find((opt) => opt.optionId === option);
+        const option1 = question1?.options.find((opt) => opt.optionId === option);
         q1OutcomePoints = option1 ? option1.outcomePoint : 0;
       }
 
@@ -807,7 +809,7 @@ const getUniversityLimitedUnderstandingJobOpportunities = async (req, res) => {
       if (question2Response) {
         const question2 = await db.collection("questions").findOne({ questionId: "2" });
         for (let optionId of question2Response.optionSelected) {
-          const option2 = question2.options.find((opt) => opt.optionId === optionId);
+          const option2 = question2?.options.find((opt) => opt.optionId === optionId);
           q2OutcomePoints += option2 ? option2.outcomePoint : 0;
         }
       }
@@ -816,7 +818,7 @@ const getUniversityLimitedUnderstandingJobOpportunities = async (req, res) => {
       if (question3Response) {
         const question3 = await db.collection("questions").findOne({ questionId: "3" });
         for (let optionId of question3Response.optionSelected) {
-          const option3 = question3.options.find((opt) => opt.optionId === optionId);
+          const option3 = question3?.options.find((opt) => opt.optionId === optionId);
           q3OutcomePoints += option3 ? option3.outcomePoint : 0;
         }
       }
@@ -828,15 +830,12 @@ const getUniversityLimitedUnderstandingJobOpportunities = async (req, res) => {
       // Calculate the total outcome points for the user
       const userOutcomePoints = question1Outcome + question2Outcome + question3Outcome;
 
-      // Add the user's points to the university's total and increment the user count
       totalOutcomePoints += userOutcomePoints;
       totalUsers += 1;
     }
 
-    // Calculate the average outcome points for the university
-    const averageOutcomePoints = totalOutcomePoints / totalUsers;
+    const averageOutcomePoints = totalUsers > 0 ? totalOutcomePoints / totalUsers : 0;
 
-    // Return the result
     res.status(200).json({
       message: "University outcome points calculated successfully",
       data: {
@@ -859,8 +858,8 @@ const getUniversityLackOfSkillsAndPreparedness = async (req, res) => {
     const db = getDb();
     const usersCollection = db.collection("users");
 
-    if(!universityId){
-      return res.status(404).json({ message: "University Id is required" });
+    if (!universityId) {
+      return res.status(400).json({ message: "University ID is required" });
     }
 
     const query = { school: universityId };
@@ -878,9 +877,12 @@ const getUniversityLackOfSkillsAndPreparedness = async (req, res) => {
     let totalUsers = 0;
 
     for (const user of users) {
-      const question4Response = user.questionResponses.find((response) => response.questionId === "4");
-      const question5Response = user.questionResponses.find((response) => response.questionId === "5");
-      const question10Response = user.questionResponses.find((response) => response.questionId === "10");
+      // Ensure questionResponses exists and is an array
+      const questionResponses = Array.isArray(user.questionResponses) ? user.questionResponses : [];
+
+      const question4Response = questionResponses.find((response) => response.questionId === "4");
+      const question5Response = questionResponses.find((response) => response.questionId === "5");
+      const question10Response = questionResponses.find((response) => response.questionId === "10");
 
       let q4OutcomePoints = 0;
       let q5OutcomePoints = 0;
@@ -889,21 +891,21 @@ const getUniversityLackOfSkillsAndPreparedness = async (req, res) => {
       if (question4Response) {
         const option = question4Response.optionSelected[0];
         const question4 = await db.collection("questions").findOne({ questionId: "4" });
-        const option4 = question4.options.find((opt) => opt.optionId === option);
+        const option4 = question4?.options.find((opt) => opt.optionId === option);
         q4OutcomePoints = option4 ? option4.outcomePoint : 0;
       }
 
       if (question5Response) {
         const option = question5Response.optionSelected[0];
         const question5 = await db.collection("questions").findOne({ questionId: "5" });
-        const option5 = question5.options.find((opt) => opt.optionId === option);
+        const option5 = question5?.options.find((opt) => opt.optionId === option);
         q5OutcomePoints = option5 ? option5.outcomePoint : 0;
       }
 
       if (question10Response) {
         const option = question10Response.optionSelected[0];
         const question10 = await db.collection("questions").findOne({ questionId: "10" });
-        const option10 = question10.options.find((opt) => opt.optionId === option);
+        const option10 = question10?.options.find((opt) => opt.optionId === option);
         q10OutcomePoints = option10 ? option10.outcomePoint : 0;
       }
 
@@ -917,7 +919,7 @@ const getUniversityLackOfSkillsAndPreparedness = async (req, res) => {
       totalUsers += 1;
     }
 
-    const averageOutcomePoints = totalOutcomePoints / totalUsers;
+    const averageOutcomePoints = totalUsers > 0 ? totalOutcomePoints / totalUsers : 0;
 
     res.status(200).json({
       message: "University outcome points for Lack of Skills and Preparedness calculated successfully",
@@ -941,8 +943,8 @@ const getUniversityConfusionAboutBranchesAndAlignment = async (req, res) => {
     const db = getDb();
     const usersCollection = db.collection("users");
 
-    if(!universityId){
-      return res.status(404).json({ message: "University Id is required" });
+    if (!universityId) {
+      return res.status(400).json({ message: "University ID is required" });
     }
 
     const query = { school: universityId };
@@ -960,9 +962,12 @@ const getUniversityConfusionAboutBranchesAndAlignment = async (req, res) => {
     let totalUsers = 0;
 
     for (const user of users) {
-      const question2Response = user.questionResponses.find((response) => response.questionId === "2");
-      const question6Response = user.questionResponses.find((response) => response.questionId === "6");
-      const question13Response = user.questionResponses.find((response) => response.questionId === "13");
+      // Ensure questionResponses exists and is an array
+      const questionResponses = Array.isArray(user.questionResponses) ? user.questionResponses : [];
+
+      const question2Response = questionResponses.find((response) => response.questionId === "2");
+      const question6Response = questionResponses.find((response) => response.questionId === "6");
+      const question13Response = questionResponses.find((response) => response.questionId === "13");
 
       let q2OutcomePoints = 0;
       let q6OutcomePoints = 0;
@@ -971,21 +976,21 @@ const getUniversityConfusionAboutBranchesAndAlignment = async (req, res) => {
       if (question2Response) {
         const option = question2Response.optionSelected[0];
         const question2 = await db.collection("questions").findOne({ questionId: "2" });
-        const option2 = question2.options.find((opt) => opt.optionId === option);
+        const option2 = question2?.options.find((opt) => opt.optionId === option);
         q2OutcomePoints = option2 ? option2.outcomePoint : 0;
       }
 
       if (question6Response) {
         const option = question6Response.optionSelected[0];
         const question6 = await db.collection("questions").findOne({ questionId: "6" });
-        const option6 = question6.options.find((opt) => opt.optionId === option);
+        const option6 = question6?.options.find((opt) => opt.optionId === option);
         q6OutcomePoints = option6 ? option6.outcomePoint : 0;
       }
 
       if (question13Response) {
         const option = question13Response.optionSelected[0];
         const question13 = await db.collection("questions").findOne({ questionId: "13" });
-        const option13 = question13.options.find((opt) => opt.optionId === option);
+        const option13 = question13?.options.find((opt) => opt.optionId === option);
         q13OutcomePoints = option13 ? option13.outcomePoint : 0;
       }
 
@@ -999,7 +1004,7 @@ const getUniversityConfusionAboutBranchesAndAlignment = async (req, res) => {
       totalUsers += 1;
     }
 
-    const averageOutcomePoints = totalOutcomePoints / totalUsers;
+    const averageOutcomePoints = totalUsers > 0 ? totalOutcomePoints / totalUsers : 0;
 
     res.status(200).json({
       message: "University outcome points for Confusion About Branches & Alignment calculated successfully",
@@ -1023,8 +1028,8 @@ const getUniversityInternshipSelectionForJobReadiness = async (req, res) => {
     const db = getDb();
     const usersCollection = db.collection("users");
 
-    if(!universityId){
-      return res.status(404).json({ message: "University Id is required" });
+    if (!universityId) {
+      return res.status(400).json({ message: "University ID is required" });
     }
 
     const query = { school: universityId };
@@ -1042,10 +1047,13 @@ const getUniversityInternshipSelectionForJobReadiness = async (req, res) => {
     let totalUsers = 0;
 
     for (const user of users) {
-      const question5Response = user.questionResponses.find((response) => response.questionId === "5");
-      const question9Response = user.questionResponses.find((response) => response.questionId === "9");
-      const question10Response = user.questionResponses.find((response) => response.questionId === "10");
-      const question12Response = user.questionResponses.find((response) => response.questionId === "12");
+      // Ensure questionResponses exists and is an array
+      const questionResponses = Array.isArray(user.questionResponses) ? user.questionResponses : [];
+
+      const question5Response = questionResponses.find((response) => response.questionId === "5");
+      const question9Response = questionResponses.find((response) => response.questionId === "9");
+      const question10Response = questionResponses.find((response) => response.questionId === "10");
+      const question12Response = questionResponses.find((response) => response.questionId === "12");
 
       let q5OutcomePoints = 0;
       let q9OutcomePoints = 0;
@@ -1055,14 +1063,14 @@ const getUniversityInternshipSelectionForJobReadiness = async (req, res) => {
       if (question5Response) {
         const option = question5Response.optionSelected[0];
         const question5 = await db.collection("questions").findOne({ questionId: "5" });
-        const option5 = question5.options.find((opt) => opt.optionId === option);
+        const option5 = question5?.options.find((opt) => opt.optionId === option);
         q5OutcomePoints = option5 ? option5.outcomePoint : 0;
       }
 
       if (question9Response) {
         const question9 = await db.collection("questions").findOne({ questionId: "9" });
         for (let optionId of question9Response.optionSelected) {
-          const option9 = question9.options.find((opt) => opt.optionId === optionId);
+          const option9 = question9?.options.find((opt) => opt.optionId === optionId);
           q9OutcomePoints += option9 ? option9.outcomePoint : 0;
         }
       }
@@ -1070,14 +1078,14 @@ const getUniversityInternshipSelectionForJobReadiness = async (req, res) => {
       if (question10Response) {
         const option = question10Response.optionSelected[0];
         const question10 = await db.collection("questions").findOne({ questionId: "10" });
-        const option10 = question10.options.find((opt) => opt.optionId === option);
+        const option10 = question10?.options.find((opt) => opt.optionId === option);
         q10OutcomePoints = option10 ? option10.outcomePoint : 0;
       }
 
       if (question12Response) {
         const option = question12Response.optionSelected[0];
         const question12 = await db.collection("questions").findOne({ questionId: "12" });
-        const option12 = question12.options.find((opt) => opt.optionId === option);
+        const option12 = question12?.options.find((opt) => opt.optionId === option);
         q12OutcomePoints = option12 ? option12.outcomePoint : 0;
       }
 
@@ -1092,7 +1100,7 @@ const getUniversityInternshipSelectionForJobReadiness = async (req, res) => {
       totalUsers += 1;
     }
 
-    const averageOutcomePoints = totalOutcomePoints / totalUsers;
+    const averageOutcomePoints = totalUsers > 0 ? totalOutcomePoints / totalUsers : 0;
 
     res.status(200).json({
       message: "University outcome points for Internship Selection for Job Readiness calculated successfully",
@@ -1125,10 +1133,13 @@ const getAllLimitedUnderstandingJobOpportunities = async (req, res) => {
     let totalUsers = 0;
 
     for (const user of users) {
+      // Ensure questionResponses exists and is an array
+      const questionResponses = Array.isArray(user.questionResponses) ? user.questionResponses : [];
+
       // Extract responses for questions 1, 2, and 3
-      const question1Response = user.questionResponses.find((response) => response.questionId === "1");
-      const question2Response = user.questionResponses.find((response) => response.questionId === "2");
-      const question3Response = user.questionResponses.find((response) => response.questionId === "3");
+      const question1Response = questionResponses.find((response) => response.questionId === "1");
+      const question2Response = questionResponses.find((response) => response.questionId === "2");
+      const question3Response = questionResponses.find((response) => response.questionId === "3");
 
       // Initialize outcome points for each question
       let q1OutcomePoints = 0;
@@ -1139,7 +1150,7 @@ const getAllLimitedUnderstandingJobOpportunities = async (req, res) => {
       if (question1Response) {
         const option = question1Response.optionSelected[0];
         const question1 = await db.collection("questions").findOne({ questionId: "1" });
-        const option1 = question1.options.find((opt) => opt.optionId === option);
+        const option1 = question1?.options.find((opt) => opt.optionId === option);
         q1OutcomePoints = option1 ? option1.outcomePoint : 0;
       }
 
@@ -1147,7 +1158,7 @@ const getAllLimitedUnderstandingJobOpportunities = async (req, res) => {
       if (question2Response) {
         const question2 = await db.collection("questions").findOne({ questionId: "2" });
         for (let optionId of question2Response.optionSelected) {
-          const option2 = question2.options.find((opt) => opt.optionId === optionId);
+          const option2 = question2?.options.find((opt) => opt.optionId === optionId);
           q2OutcomePoints += option2 ? option2.outcomePoint : 0;
         }
       }
@@ -1156,7 +1167,7 @@ const getAllLimitedUnderstandingJobOpportunities = async (req, res) => {
       if (question3Response) {
         const question3 = await db.collection("questions").findOne({ questionId: "3" });
         for (let optionId of question3Response.optionSelected) {
-          const option3 = question3.options.find((opt) => opt.optionId === optionId);
+          const option3 = question3?.options.find((opt) => opt.optionId === optionId);
           q3OutcomePoints += option3 ? option3.outcomePoint : 0;
         }
       }
@@ -1207,9 +1218,12 @@ const getAllLackOfSkillsAndPreparedness = async (req, res) => {
     let totalUsers = 0;
 
     for (const user of users) {
-      const question4Response = user.questionResponses.find((response) => response.questionId === "4");
-      const question5Response = user.questionResponses.find((response) => response.questionId === "5");
-      const question10Response = user.questionResponses.find((response) => response.questionId === "10");
+      // Ensure questionResponses exists and is an array
+      const questionResponses = Array.isArray(user.questionResponses) ? user.questionResponses : [];
+
+      const question4Response = questionResponses.find((response) => response.questionId === "4");
+      const question5Response = questionResponses.find((response) => response.questionId === "5");
+      const question10Response = questionResponses.find((response) => response.questionId === "10");
 
       let q4OutcomePoints = 0;
       let q5OutcomePoints = 0;
@@ -1218,21 +1232,21 @@ const getAllLackOfSkillsAndPreparedness = async (req, res) => {
       if (question4Response) {
         const option = question4Response.optionSelected[0];
         const question4 = await db.collection("questions").findOne({ questionId: "4" });
-        const option4 = question4.options.find((opt) => opt.optionId === option);
+        const option4 = question4?.options.find((opt) => opt.optionId === option);
         q4OutcomePoints = option4 ? option4.outcomePoint : 0;
       }
 
       if (question5Response) {
         const option = question5Response.optionSelected[0];
         const question5 = await db.collection("questions").findOne({ questionId: "5" });
-        const option5 = question5.options.find((opt) => opt.optionId === option);
+        const option5 = question5?.options.find((opt) => opt.optionId === option);
         q5OutcomePoints = option5 ? option5.outcomePoint : 0;
       }
 
       if (question10Response) {
         const option = question10Response.optionSelected[0];
         const question10 = await db.collection("questions").findOne({ questionId: "10" });
-        const option10 = question10.options.find((opt) => opt.optionId === option);
+        const option10 = question10?.options.find((opt) => opt.optionId === option);
         q10OutcomePoints = option10 ? option10.outcomePoint : 0;
       }
 
@@ -1277,9 +1291,12 @@ const getAllConfusionAboutBranchesAndAlignment = async (req, res) => {
     let totalUsers = 0;
 
     for (const user of users) {
-      const question2Response = user.questionResponses.find((response) => response.questionId === "2");
-      const question6Response = user.questionResponses.find((response) => response.questionId === "6");
-      const question13Response = user.questionResponses.find((response) => response.questionId === "13");
+      // Ensure questionResponses exists and is an array
+      const questionResponses = Array.isArray(user.questionResponses) ? user.questionResponses : [];
+
+      const question2Response = questionResponses.find((response) => response.questionId === "2");
+      const question6Response = questionResponses.find((response) => response.questionId === "6");
+      const question13Response = questionResponses.find((response) => response.questionId === "13");
 
       let q2OutcomePoints = 0;
       let q6OutcomePoints = 0;
@@ -1288,21 +1305,21 @@ const getAllConfusionAboutBranchesAndAlignment = async (req, res) => {
       if (question2Response) {
         const option = question2Response.optionSelected[0];
         const question2 = await db.collection("questions").findOne({ questionId: "2" });
-        const option2 = question2.options.find((opt) => opt.optionId === option);
+        const option2 = question2?.options.find((opt) => opt.optionId === option);
         q2OutcomePoints = option2 ? option2.outcomePoint : 0;
       }
 
       if (question6Response) {
         const option = question6Response.optionSelected[0];
         const question6 = await db.collection("questions").findOne({ questionId: "6" });
-        const option6 = question6.options.find((opt) => opt.optionId === option);
+        const option6 = question6?.options.find((opt) => opt.optionId === option);
         q6OutcomePoints = option6 ? option6.outcomePoint : 0;
       }
 
       if (question13Response) {
         const option = question13Response.optionSelected[0];
         const question13 = await db.collection("questions").findOne({ questionId: "13" });
-        const option13 = question13.options.find((opt) => opt.optionId === option);
+        const option13 = question13?.options.find((opt) => opt.optionId === option);
         q13OutcomePoints = option13 ? option13.outcomePoint : 0;
       }
 
@@ -1347,10 +1364,13 @@ const getAllInternshipSelectionForJobReadiness = async (req, res) => {
     let totalUsers = 0;
 
     for (const user of users) {
-      const question5Response = user.questionResponses.find((response) => response.questionId === "5");
-      const question9Response = user.questionResponses.find((response) => response.questionId === "9");
-      const question10Response = user.questionResponses.find((response) => response.questionId === "10");
-      const question12Response = user.questionResponses.find((response) => response.questionId === "12");
+      // Ensure questionResponses exists and is an array
+      const questionResponses = Array.isArray(user.questionResponses) ? user.questionResponses : [];
+
+      const question5Response = questionResponses.find((response) => response.questionId === "5");
+      const question9Response = questionResponses.find((response) => response.questionId === "9");
+      const question10Response = questionResponses.find((response) => response.questionId === "10");
+      const question12Response = questionResponses.find((response) => response.questionId === "12");
 
       let q5OutcomePoints = 0;
       let q9OutcomePoints = 0;
@@ -1360,14 +1380,14 @@ const getAllInternshipSelectionForJobReadiness = async (req, res) => {
       if (question5Response) {
         const option = question5Response.optionSelected[0];
         const question5 = await db.collection("questions").findOne({ questionId: "5" });
-        const option5 = question5.options.find((opt) => opt.optionId === option);
+        const option5 = question5?.options.find((opt) => opt.optionId === option);
         q5OutcomePoints = option5 ? option5.outcomePoint : 0;
       }
 
       if (question9Response) {
         const question9 = await db.collection("questions").findOne({ questionId: "9" });
         for (let optionId of question9Response.optionSelected) {
-          const option9 = question9.options.find((opt) => opt.optionId === optionId);
+          const option9 = question9?.options.find((opt) => opt.optionId === optionId);
           q9OutcomePoints += option9 ? option9.outcomePoint : 0;
         }
       }
@@ -1375,14 +1395,14 @@ const getAllInternshipSelectionForJobReadiness = async (req, res) => {
       if (question10Response) {
         const option = question10Response.optionSelected[0];
         const question10 = await db.collection("questions").findOne({ questionId: "10" });
-        const option10 = question10.options.find((opt) => opt.optionId === option);
+        const option10 = question10?.options.find((opt) => opt.optionId === option);
         q10OutcomePoints = option10 ? option10.outcomePoint : 0;
       }
 
       if (question12Response) {
         const option = question12Response.optionSelected[0];
         const question12 = await db.collection("questions").findOne({ questionId: "12" });
-        const option12 = question12.options.find((opt) => opt.optionId === option);
+        const option12 = question12?.options.find((opt) => opt.optionId === option);
         q12OutcomePoints = option12 ? option12.outcomePoint : 0;
       }
 
@@ -1435,8 +1455,11 @@ const getUniversityMismatchSalaryExpectations = async (req, res) => {
     let totalUsers = 0;
 
     for (const user of users) {
-      const question7Response = user.questionResponses.find((response) => response.questionId === "7");
-      const question8Response = user.questionResponses.find((response) => response.questionId === "8");
+      // Ensure questionResponses exists and is an array
+      const questionResponses = Array.isArray(user.questionResponses) ? user.questionResponses : [];
+
+      const question7Response = questionResponses.find((response) => response.questionId === "7");
+      const question8Response = questionResponses.find((response) => response.questionId === "8");
 
       let q7OutcomePoints = 0;
       let q8OutcomePoints = 0;
@@ -1444,14 +1467,14 @@ const getUniversityMismatchSalaryExpectations = async (req, res) => {
       if (question7Response) {
         const option = question7Response.optionSelected[0];
         const question7 = await db.collection("questions").findOne({ questionId: "7" });
-        const option7 = question7.options.find((opt) => opt.optionId === option);
+        const option7 = question7?.options.find((opt) => opt.optionId === option);
         q7OutcomePoints = option7 ? option7.outcomePoint : 0;
       }
 
       if (question8Response) {
         const option = question8Response.optionSelected[0];
         const question8 = await db.collection("questions").findOne({ questionId: "8" });
-        const option8 = question8.options.find((opt) => opt.optionId === option);
+        const option8 = question8?.options.find((opt) => opt.optionId === option);
         q8OutcomePoints = option8 ? option8.outcomePoint : 0;
       }
 
@@ -1503,9 +1526,12 @@ const getUniversityInterestCareerSupportServices = async (req, res) => {
     let totalUsers = 0;
 
     for (const user of users) {
-      const question11Response = user.questionResponses.find((response) => response.questionId === "11");
-      const question13Response = user.questionResponses.find((response) => response.questionId === "13");
-      const question10Response = user.questionResponses.find((response) => response.questionId === "10");
+      // Ensure questionResponses exists and is an array
+      const questionResponses = Array.isArray(user.questionResponses) ? user.questionResponses : [];
+
+      const question11Response = questionResponses.find((response) => response.questionId === "11");
+      const question13Response = questionResponses.find((response) => response.questionId === "13");
+      const question10Response = questionResponses.find((response) => response.questionId === "10");
 
       let q11OutcomePoints = 0;
       let q13OutcomePoints = 0;
@@ -1514,21 +1540,21 @@ const getUniversityInterestCareerSupportServices = async (req, res) => {
       if (question11Response) {
         const option = question11Response.optionSelected[0];
         const question11 = await db.collection("questions").findOne({ questionId: "11" });
-        const option11 = question11.options.find((opt) => opt.optionId === option);
+        const option11 = question11?.options.find((opt) => opt.optionId === option);
         q11OutcomePoints = option11 ? option11.outcomePoint : 0;
       }
 
       if (question13Response) {
         const option = question13Response.optionSelected[0];
         const question13 = await db.collection("questions").findOne({ questionId: "13" });
-        const option13 = question13.options.find((opt) => opt.optionId === option);
+        const option13 = question13?.options.find((opt) => opt.optionId === option);
         q13OutcomePoints = option13 ? option13.outcomePoint : 0;
       }
 
       if (question10Response) {
         const option = question10Response.optionSelected[0];
         const question10 = await db.collection("questions").findOne({ questionId: "10" });
-        const option10 = question10.options.find((opt) => opt.optionId === option);
+        const option10 = question10?.options.find((opt) => opt.optionId === option);
         q10OutcomePoints = option10 ? option10.outcomePoint : 0;
       }
 
@@ -1574,8 +1600,11 @@ const getAllMismatchSalaryExpectations = async (req, res) => {
     let totalUsers = 0;
 
     for (const user of users) {
-      const question7Response = user.questionResponses.find((response) => response.questionId === "7");
-      const question8Response = user.questionResponses.find((response) => response.questionId === "8");
+      // Ensure questionResponses exists and is an array
+      const questionResponses = Array.isArray(user.questionResponses) ? user.questionResponses : [];
+
+      const question7Response = questionResponses.find((response) => response.questionId === "7");
+      const question8Response = questionResponses.find((response) => response.questionId === "8");
 
       let q7OutcomePoints = 0;
       let q8OutcomePoints = 0;
@@ -1583,14 +1612,14 @@ const getAllMismatchSalaryExpectations = async (req, res) => {
       if (question7Response) {
         const option = question7Response.optionSelected[0];
         const question7 = await db.collection("questions").findOne({ questionId: "7" });
-        const option7 = question7.options.find((opt) => opt.optionId === option);
+        const option7 = question7?.options.find((opt) => opt.optionId === option);
         q7OutcomePoints = option7 ? option7.outcomePoint : 0;
       }
 
       if (question8Response) {
         const option = question8Response.optionSelected[0];
         const question8 = await db.collection("questions").findOne({ questionId: "8" });
-        const option8 = question8.options.find((opt) => opt.optionId === option);
+        const option8 = question8?.options.find((opt) => opt.optionId === option);
         q8OutcomePoints = option8 ? option8.outcomePoint : 0;
       }
 
@@ -1603,7 +1632,7 @@ const getAllMismatchSalaryExpectations = async (req, res) => {
       totalUsers += 1;
     }
 
-    const averageOutcomePoints = totalOutcomePoints / totalUsers;
+    const averageOutcomePoints = totalUsers > 0 ? totalOutcomePoints / totalUsers : 0;
 
     res.status(200).json({
       message: "Outcome points for Mismatch Salary Expectations calculated successfully for all users",
@@ -1634,9 +1663,12 @@ const getAllInterestCareerSupportServices = async (req, res) => {
     let totalUsers = 0;
 
     for (const user of users) {
-      const question11Response = user.questionResponses.find((response) => response.questionId === "11");
-      const question13Response = user.questionResponses.find((response) => response.questionId === "13");
-      const question10Response = user.questionResponses.find((response) => response.questionId === "10");
+      // Ensure questionResponses exists and is an array
+      const questionResponses = Array.isArray(user.questionResponses) ? user.questionResponses : [];
+
+      const question11Response = questionResponses.find((response) => response.questionId === "11");
+      const question13Response = questionResponses.find((response) => response.questionId === "13");
+      const question10Response = questionResponses.find((response) => response.questionId === "10");
 
       let q11OutcomePoints = 0;
       let q13OutcomePoints = 0;
@@ -1645,21 +1677,21 @@ const getAllInterestCareerSupportServices = async (req, res) => {
       if (question11Response) {
         const option = question11Response.optionSelected[0];
         const question11 = await db.collection("questions").findOne({ questionId: "11" });
-        const option11 = question11.options.find((opt) => opt.optionId === option);
+        const option11 = question11?.options.find((opt) => opt.optionId === option);
         q11OutcomePoints = option11 ? option11.outcomePoint : 0;
       }
 
       if (question13Response) {
         const option = question13Response.optionSelected[0];
         const question13 = await db.collection("questions").findOne({ questionId: "13" });
-        const option13 = question13.options.find((opt) => opt.optionId === option);
+        const option13 = question13?.options.find((opt) => opt.optionId === option);
         q13OutcomePoints = option13 ? option13.outcomePoint : 0;
       }
 
       if (question10Response) {
         const option = question10Response.optionSelected[0];
         const question10 = await db.collection("questions").findOne({ questionId: "10" });
-        const option10 = question10.options.find((opt) => opt.optionId === option);
+        const option10 = question10?.options.find((opt) => opt.optionId === option);
         q10OutcomePoints = option10 ? option10.outcomePoint : 0;
       }
 
@@ -1673,7 +1705,7 @@ const getAllInterestCareerSupportServices = async (req, res) => {
       totalUsers += 1;
     }
 
-    const averageOutcomePoints = totalOutcomePoints / totalUsers;
+    const averageOutcomePoints = totalUsers > 0 ? totalOutcomePoints / totalUsers : 0;
 
     res.status(200).json({
       message: "Outcome points for Interest Career Support Services calculated successfully for all users",
@@ -1712,20 +1744,23 @@ const getAllSurveyResultsByQuestionId = async (req, res) => {
     const optionCounts = {};
 
     // Initialize option counts with optionIds from questionData to ensure all options are included
-    questionData.options.forEach(option => {
+    questionData.options.forEach((option) => {
       optionCounts[option.optionId] = 0;
     });
 
     let totalResponses = 0;
-    
+
     // Step 3: Aggregate responses to count the frequency of each selected option
-    users.forEach(user => {
-      const questionResponse = user.questionResponses.find(response => response.questionId === questionId);
+    users.forEach((user) => {
+      // Ensure questionResponses exists and is an array
+      const questionResponses = Array.isArray(user.questionResponses) ? user.questionResponses : [];
+
+      const questionResponse = questionResponses.find((response) => response.questionId === questionId);
       if (questionResponse) {
         totalResponses += 1;
 
         // Count each selected option
-        questionResponse.optionSelected.forEach(optionId => {
+        questionResponse.optionSelected.forEach((optionId) => {
           if (optionCounts.hasOwnProperty(optionId)) {
             optionCounts[optionId] += 1;
           }
@@ -1734,7 +1769,7 @@ const getAllSurveyResultsByQuestionId = async (req, res) => {
     });
 
     // Step 4: Calculate percentage for each option and merge with option details
-    const optionsWithStatistics = questionData.options.map(option => {
+    const optionsWithStatistics = questionData.options.map((option) => {
       const frequency = optionCounts[option.optionId] || 0;
       const percentage = totalResponses > 0 ? ((frequency / totalResponses) * 100).toFixed(2) : "0.00";
 
@@ -1789,18 +1824,21 @@ const getUniversitySurveyResultsByQuestionId = async (req, res) => {
     let totalResponses = 0;
 
     // Initialize option counts with optionIds from questionData to ensure all options are included
-    questionData.options.forEach(option => {
+    questionData.options.forEach((option) => {
       optionCounts[option.optionId] = 0;
     });
 
     // Step 3: Aggregate responses to count the frequency of each selected option
-    users.forEach(user => {
-      const questionResponse = user.questionResponses.find(response => response.questionId === questionId);
+    users.forEach((user) => {
+      // Ensure questionResponses exists and is an array
+      const questionResponses = Array.isArray(user.questionResponses) ? user.questionResponses : [];
+
+      const questionResponse = questionResponses.find((response) => response.questionId === questionId);
       if (questionResponse) {
         totalResponses += 1;
 
         // Count each selected option
-        questionResponse.optionSelected.forEach(optionId => {
+        questionResponse.optionSelected.forEach((optionId) => {
           if (optionCounts.hasOwnProperty(optionId)) {
             optionCounts[optionId] += 1;
           }
@@ -1809,7 +1847,7 @@ const getUniversitySurveyResultsByQuestionId = async (req, res) => {
     });
 
     // Step 4: Calculate percentage for each option and merge with option details
-    const optionsWithStatistics = questionData.options.map(option => {
+    const optionsWithStatistics = questionData.options.map((option) => {
       const frequency = optionCounts[option.optionId] || 0;
       const percentage = totalResponses > 0 ? ((frequency / totalResponses) * 100).toFixed(2) : "0.00";
 
@@ -1838,4 +1876,159 @@ const getUniversitySurveyResultsByQuestionId = async (req, res) => {
   }
 };
 
-module.exports = {addQuestion, getAllQuestion, getQuestionById, storeAnswerById , getSurveyResultsByQuestionId , getSurveyStatistics , getLimitedUnderstandingJobOpportunities , getLackOfSkillsAndPreparedness , getConfusionAboutBranchesAndAlignment , getInternshipSelectionForJobReadiness , getCombinedOutcomePoints , getUniversityLimitedUnderstandingJobOpportunities , getUniversityLackOfSkillsAndPreparedness , getUniversityConfusionAboutBranchesAndAlignment , getUniversityInternshipSelectionForJobReadiness , getAllLimitedUnderstandingJobOpportunities , getAllLackOfSkillsAndPreparedness,getAllConfusionAboutBranchesAndAlignment ,getAllInternshipSelectionForJobReadiness,getUniversityMismatchSalaryExpectations, getUniversityInterestCareerSupportServices, getAllMismatchSalaryExpectations, getAllInterestCareerSupportServices , getMismatchSalaryExpectations , getInterestCareerSupportServices , getAllSurveyResultsByQuestionId , getUniversitySurveyResultsByQuestionId};
+const getMostPreferredCareerChoices = async (req, res) => {
+
+  try {
+    const db = getDb();
+    const questionId = "2";
+    // Step 1: Fetch question data from the "questions" collection
+    const questionData = await db.collection("questions").findOne({ questionId: questionId });
+
+    if (!questionData) {
+      return res.status(404).json({ message: "Question not found" });
+    }
+
+    // Step 2: Fetch all user responses for the specific questionId from the "users" collection
+    const users = await db
+      .collection("users")
+      .find({ "questionResponses.questionId": questionId }, { projection: { questionResponses: 1 } })
+      .toArray();
+
+    // Initialize counters for each option based on question data options
+    const optionCounts = {};
+
+    // Initialize option counts with optionIds from questionData to ensure all options are included
+    questionData.options.forEach(option => {
+      optionCounts[option.optionId] = 0;
+    });
+
+    let totalResponses = 0;
+
+    // Step 3: Aggregate responses to count the frequency of each selected option
+    users.forEach(user => {
+      const questionResponse = user.questionResponses.find(response => response.questionId === questionId);
+      if (questionResponse) {
+        totalResponses += 1;
+
+        // Count each selected option
+        questionResponse.optionSelected.forEach(optionId => {
+          if (optionCounts.hasOwnProperty(optionId)) {
+            optionCounts[optionId] += 1;
+          }
+        });
+      }
+    });
+
+    // Step 4: Calculate percentage for each option and merge with option details
+    const optionsWithStatistics = questionData.options.map(option => {
+      const frequency = optionCounts[option.optionId] || 0;
+      const percentage = totalResponses > 0 ? ((frequency / totalResponses) * 100).toFixed(2) : "0.00";
+
+      return {
+        optionId: option.optionId,
+        optionText: option.optionText,
+        optionPoint: option.optionPoint,
+        optionFrequency: frequency,
+        percentage: parseFloat(percentage),
+      };
+    });
+
+    // Step 5: Sort options by percentage in descending order and take the top 4
+    const topOptions = optionsWithStatistics
+      .sort((a, b) => b.percentage - a.percentage)
+      .slice(0, 4);
+
+    // Step 6: Send response with question details and top 4 calculated statistics
+    res.status(200).json({
+      message: "Top 4 survey results retrieved successfully",
+      questionId,
+      questionText: questionData.questionText,
+      selectionType: questionData.selectionType,
+      totalResponses,
+      topOptions,
+    });
+  } catch (error) {
+    console.error("Error fetching top survey results by question ID:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+const getLeastPreferredCareerChoices = async (req, res) => {
+
+  try {
+    const db = getDb();
+    const questionId = "3";
+    // Step 1: Fetch question data from the "questions" collection
+    const questionData = await db.collection("questions").findOne({ questionId: questionId });
+
+    if (!questionData) {
+      return res.status(404).json({ message: "Question not found" });
+    }
+
+    // Step 2: Fetch all user responses for the specific questionId from the "users" collection
+    const users = await db
+      .collection("users")
+      .find({ "questionResponses.questionId": questionId }, { projection: { questionResponses: 1 } })
+      .toArray();
+
+    // Initialize counters for each option based on question data options
+    const optionCounts = {};
+
+    // Initialize option counts with optionIds from questionData to ensure all options are included
+    questionData.options.forEach(option => {
+      optionCounts[option.optionId] = 0;
+    });
+
+    let totalResponses = 0;
+
+    // Step 3: Aggregate responses to count the frequency of each selected option
+    users.forEach(user => {
+      const questionResponse = user.questionResponses.find(response => response.questionId === questionId);
+      if (questionResponse) {
+        totalResponses += 1;
+
+        // Count each selected option
+        questionResponse.optionSelected.forEach(optionId => {
+          if (optionCounts.hasOwnProperty(optionId)) {
+            optionCounts[optionId] += 1;
+          }
+        });
+      }
+    });
+
+    // Step 4: Calculate percentage for each option and merge with option details
+    const optionsWithStatistics = questionData.options.map(option => {
+      const frequency = optionCounts[option.optionId] || 0;
+      const percentage = totalResponses > 0 ? ((frequency / totalResponses) * 100).toFixed(2) : "0.00";
+
+      return {
+        optionId: option.optionId,
+        optionText: option.optionText,
+        optionPoint: option.optionPoint,
+        optionFrequency: frequency,
+        percentage: parseFloat(percentage),
+      };
+    });
+
+    // Step 5: Sort options by percentage in descending order and take the top 4
+    const topOptions = optionsWithStatistics
+      .sort((a, b) => b.percentage - a.percentage)
+      .slice(0, 4);
+
+    // Step 6: Send response with question details and top 4 calculated statistics
+    res.status(200).json({
+      message: "Top 4 survey results retrieved successfully",
+      questionId,
+      questionText: questionData.questionText,
+      selectionType: questionData.selectionType,
+      totalResponses,
+      topOptions,
+    });
+  } catch (error) {
+    console.error("Error fetching top survey results by question ID:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+
+module.exports = {addQuestion, getAllQuestion, getQuestionById, storeAnswerById , getSurveyResultsByQuestionId , getSurveyStatistics , getLimitedUnderstandingJobOpportunities , getLackOfSkillsAndPreparedness , getConfusionAboutBranchesAndAlignment , getInternshipSelectionForJobReadiness , getCombinedOutcomePoints , getUniversityLimitedUnderstandingJobOpportunities , getUniversityLackOfSkillsAndPreparedness , getUniversityConfusionAboutBranchesAndAlignment , getUniversityInternshipSelectionForJobReadiness , getAllLimitedUnderstandingJobOpportunities , getAllLackOfSkillsAndPreparedness,getAllConfusionAboutBranchesAndAlignment ,getAllInternshipSelectionForJobReadiness,getUniversityMismatchSalaryExpectations, getUniversityInterestCareerSupportServices, getAllMismatchSalaryExpectations, getAllInterestCareerSupportServices , getMismatchSalaryExpectations , getInterestCareerSupportServices , getAllSurveyResultsByQuestionId , getUniversitySurveyResultsByQuestionId , getMostPreferredCareerChoices , getLeastPreferredCareerChoices};
