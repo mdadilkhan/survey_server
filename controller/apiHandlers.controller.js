@@ -416,6 +416,93 @@ const login = async (req, res) => {
   }
 };
 
+//admin
+
+const addUniversity = async (req, res) =>{
+  const { universityName, state } = req.body;
+  const db = getDb();
+
+  try{
+    // Create the University object
+    const newUniversity = {
+      universityName,
+      state,
+      createdAt: new Date(),
+    };
+
+    await db.collection("university").insertOne(newUniversity);
+
+    return res.status(201).json({ message: "University created successfully.", newUniversity });
+
+  }catch(error){
+    console.error("Error during admin login:", error);
+      res.status(500).json({ message: "Server error" });
+  }
+}
+
+const getAllUniversities = async (req, res) => {
+  const db = getDb();
+
+  try {
+    // Fetch all universities from the "university" collection
+    const universities = await db.collection("university").find({}).toArray();
+
+    // Return the list of universities
+    return res.status(200).json({
+      message: "Universities fetched successfully.",
+      universities,
+    });
+  } catch (error) {
+    console.error("Error fetching universities:", error);
+    return res.status(500).json({ message: "Server error" });
+  }
+};
+
+const editUniversity = async (req, res) => {
+  const { universityName, state ,id} = req.body;
+  const db = getDb();
+
+  try {
+    // Update the university document
+    const updatedUniversity = await db.collection("university").findOneAndUpdate(
+      { _id: new ObjectId(id) },
+      { $set: { universityName, state, updatedAt: new Date() } },
+      { returnDocument: "after" }
+    );
+
+    if (!updatedUniversity.value) {
+      return res.status(404).json({ message: "University not found." });
+    }
+
+    return res.status(200).json({
+      message: "University updated successfully.",
+      updatedUniversity: updatedUniversity.value,
+    });
+  } catch (error) {
+    console.error("Error updating university:", error);
+    return res.status(500).json({ message: "Server error" });
+  }
+};
+
+const deleteUniversity = async (req, res) => {
+  const { id } = req.params;
+  const db = getDb();
+
+  try {
+    // Delete the university document
+    const deletedUniversity = await db.collection("university").deleteOne({ _id: new ObjectId(id) });
+
+    if (deletedUniversity.deletedCount === 0) {
+      return res.status(404).json({ message: "University not found." });
+    }
+
+    return res.status(200).json({ message: "University deleted successfully." });
+  } catch (error) {
+    console.error("Error deleting university:", error);
+    return res.status(500).json({ message: "Server error" });
+  }
+};
+
 module.exports = {
   sendOtpWithSms,
   sendOtpWithEmail,
@@ -424,4 +511,8 @@ module.exports = {
   uploadImage,
   insertEmail,
   login,
+  addUniversity,
+  getAllUniversities,
+  editUniversity,
+  deleteUniversity
 };

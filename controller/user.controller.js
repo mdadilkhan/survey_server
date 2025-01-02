@@ -5,10 +5,6 @@ const crypto =require('crypto')
 const { sendTemplatedEmail } = require("../SES/ses.js");
 const Razorpay = require("razorpay");
 const { v4: uuidv4 } = require("uuid");
-// const razorpay = new Razorpay({
-//   key_id: "rzp_test_IqmS1BltCU4SFU",
-//   key_secret: "tJA2Z7X9lDyG8FHfmZ6J2qv6",
-// });
 
 const razorpay = new Razorpay({
   key_id: 'rzp_live_IIwhdZvx1c4BGz',
@@ -16,36 +12,17 @@ const razorpay = new Razorpay({
   
 });
 
-const userDetails = async (req, res) => {
-  try {
-    const user = req.user;
-
-    return res.status(200).json({
-      message: "User details",
-      data: user,
-    });
-  } catch (error) {
-    return res.status(500).json({
-      message: error.message || error,
-      error: true,
-    });
-  }
-};
-
 const getUserDetails = async (req, res) => {
   try {
     const db = getDb();
     const userId = req.params; 
-    if (!ObjectId.isValid(userId)) {
+    if (!userId) {
       return res.status(400).json({
-        message: "Invalid user ID format.",
+        message: "UserId is required",
       });
     }
     const user = await db.collection("users").findOne(
-      { _id: new ObjectId(userId) },
-      {
-        projection: { appointments: 0, clientHistory: 0 },
-      }
+      { _id: new ObjectId(userId) }
     );
 
     if (!user) {
@@ -56,7 +33,7 @@ const getUserDetails = async (req, res) => {
 
     return res.status(200).json({
       message: "User details retrieved successfully.",
-      data: user,
+      user,
     });
   } catch (error) {
     return res.status(500).json({
@@ -267,7 +244,6 @@ const bookSlot = async (req, res) => {
   }
 };
 
-
 const createOrder = async (req, res) => {
   try {
     console.log("isnide create order", req.body);
@@ -432,7 +408,6 @@ const getAllSlots = async (req, res) => {
 };
 
 module.exports = {
-  userDetails,
   getUserDetails,
   contactSupport,
   bookSlot,

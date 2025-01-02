@@ -1,6 +1,5 @@
 const express = require('express');
-const authenticateToken = require('../middleware/authToken.middleware');
-const { userDetails, getUserDetails, contactSupport, bookSlot, createOrder, verifyOrder, createSlots, getAllSlots} = require('../controller/user.controller');
+const { getUserDetails, contactSupport, bookSlot, createOrder, verifyOrder, createSlots, getAllSlots} = require('../controller/user.controller');
 // Import the controllers
 
 
@@ -9,7 +8,6 @@ const userRouter = express.Router();
 
 // Define the routes using authRouter, not router
 
-userRouter.get('/user/userDetails', authenticateToken, userDetails);
 userRouter.get('/getUserDetails/:id', getUserDetails);
 userRouter.post('/bookslot', bookSlot);
 userRouter.post('/contactSupport',contactSupport)
