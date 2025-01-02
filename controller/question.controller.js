@@ -761,13 +761,21 @@ const getCombinedOutcomePoints = async (req, res) => {
 };
 
 const getUniversityLimitedUnderstandingJobOpportunities = async (req, res) => {
-  const { universityId , year} = req.body; // Assuming universityId is passed as a request parameter
+  const { universityId, year, course } = req.body;
   try {
     const db = getDb();
     const usersCollection = db.collection("users");
 
-    // Fetch all users from the specified university
-    const users = await usersCollection.find({ school: universityId , year}).toArray();
+    if(!universityId){
+      return res.status(404).json({ message: "University Id is required" });
+    }
+
+    const query = { school: universityId };
+    if (year) query.year = year;
+    if (course && course !== "all") query.course = course;
+
+    // Fetch all users matching the query
+    const users = await usersCollection.find(query).toArray();
 
     if (!users || users.length === 0) {
       return res.status(404).json({ message: "No users found for the specified university" });
@@ -845,14 +853,22 @@ const getUniversityLimitedUnderstandingJobOpportunities = async (req, res) => {
 };
 
 const getUniversityLackOfSkillsAndPreparedness = async (req, res) => {
-  const { universityId , year} = req.body; // Assuming universityId is passed as a request parameter
+  const { universityId, year, course } = req.body;
 
   try {
     const db = getDb();
     const usersCollection = db.collection("users");
 
-    // Fetch all users from the specified university
-    const users = await usersCollection.find({ school: universityId , year}).toArray();
+    if(!universityId){
+      return res.status(404).json({ message: "University Id is required" });
+    }
+
+    const query = { school: universityId };
+    if (year) query.year = year;
+    if (course && course !== "all") query.course = course;
+
+    // Fetch all users matching the query
+    const users = await usersCollection.find(query).toArray();
 
     if (!users || users.length === 0) {
       return res.status(404).json({ message: "No users found for the specified university" });
@@ -919,13 +935,22 @@ const getUniversityLackOfSkillsAndPreparedness = async (req, res) => {
 };
 
 const getUniversityConfusionAboutBranchesAndAlignment = async (req, res) => {
-  const { universityId , year} = req.body; // Assuming universityId is passed as a request parameter
+  const { universityId, year, course } = req.body;
 
   try {
     const db = getDb();
     const usersCollection = db.collection("users");
 
-    const users = await usersCollection.find({ school: universityId , year}).toArray();
+    if(!universityId){
+      return res.status(404).json({ message: "University Id is required" });
+    }
+
+    const query = { school: universityId };
+    if (year) query.year = year;
+    if (course && course !== "all") query.course = course;
+
+    // Fetch all users matching the query
+    const users = await usersCollection.find(query).toArray();
 
     if (!users || users.length === 0) {
       return res.status(404).json({ message: "No users found for the specified university" });
@@ -992,13 +1017,22 @@ const getUniversityConfusionAboutBranchesAndAlignment = async (req, res) => {
 };
 
 const getUniversityInternshipSelectionForJobReadiness = async (req, res) => {
-  const { universityId , year} = req.body; // Assuming universityId is passed as a request parameter
+  const { universityId, year, course } = req.body;
 
   try {
     const db = getDb();
     const usersCollection = db.collection("users");
 
-    const users = await usersCollection.find({ school: universityId , year}).toArray();
+    if(!universityId){
+      return res.status(404).json({ message: "University Id is required" });
+    }
+
+    const query = { school: universityId };
+    if (year) query.year = year;
+    if (course && course !== "all") query.course = course;
+
+    // Fetch all users matching the query
+    const users = await usersCollection.find(query).toArray();
 
     if (!users || users.length === 0) {
       return res.status(404).json({ message: "No users found for the specified university" });
@@ -1380,14 +1414,18 @@ const getAllInternshipSelectionForJobReadiness = async (req, res) => {
 };
 
 const getUniversityMismatchSalaryExpectations = async (req, res) => {
-  const { universityId , year} = req.body; // Assuming universityId is passed as a request parameter
+  const { universityId, year, course } = req.body;
 
   try {
     const db = getDb();
     const usersCollection = db.collection("users");
 
-    // Fetch all users from the specified university
-    const users = await usersCollection.find({ school: universityId , year}).toArray();
+    const query = { school: universityId };
+    if (year) query.year = year;
+    if (course && course !== "all") query.course = course;
+
+    // Fetch all users matching the query
+    const users = await usersCollection.find(query).toArray();
 
     if (!users || users.length === 0) {
       return res.status(404).json({ message: "No users found for the specified university" });
@@ -1444,13 +1482,18 @@ const getUniversityMismatchSalaryExpectations = async (req, res) => {
 };
 
 const getUniversityInterestCareerSupportServices = async (req, res) => {
-  const { universityId , year} = req.body; // Assuming universityId is passed as a request parameter
+  const { universityId, year, course } = req.body;
 
   try {
     const db = getDb();
     const usersCollection = db.collection("users");
 
-    const users = await usersCollection.find({ school: universityId , year }).toArray();
+    const query = { school: universityId };
+    if (year) query.year = year;
+    if (course && course !== "all") query.course = course;
+
+    // Fetch all users matching the query
+    const users = await usersCollection.find(query).toArray();
 
     if (!users || users.length === 0) {
       return res.status(404).json({ message: "No users found for the specified university" });
@@ -1646,4 +1689,153 @@ const getAllInterestCareerSupportServices = async (req, res) => {
   }
 };
 
-module.exports = {addQuestion, getAllQuestion, getQuestionById, storeAnswerById , getSurveyResultsByQuestionId , getSurveyStatistics , getLimitedUnderstandingJobOpportunities , getLackOfSkillsAndPreparedness , getConfusionAboutBranchesAndAlignment , getInternshipSelectionForJobReadiness , getCombinedOutcomePoints , getUniversityLimitedUnderstandingJobOpportunities , getUniversityLackOfSkillsAndPreparedness , getUniversityConfusionAboutBranchesAndAlignment , getUniversityInternshipSelectionForJobReadiness , getAllLimitedUnderstandingJobOpportunities , getAllLackOfSkillsAndPreparedness,getAllConfusionAboutBranchesAndAlignment ,getAllInternshipSelectionForJobReadiness,getUniversityMismatchSalaryExpectations, getUniversityInterestCareerSupportServices, getAllMismatchSalaryExpectations, getAllInterestCareerSupportServices , getMismatchSalaryExpectations , getInterestCareerSupportServices};
+const getAllSurveyResultsByQuestionId = async (req, res) => {
+  const { questionId } = req.params;
+
+  try {
+    const db = getDb();
+
+    // Step 1: Fetch question data from the "questions" collection
+    const questionData = await db.collection("questions").findOne({ questionId: questionId });
+
+    if (!questionData) {
+      return res.status(404).json({ message: "Question not found" });
+    }
+
+    // Step 2: Fetch all user responses for the specific questionId from the "users" collection
+    const users = await db
+      .collection("users")
+      .find({ "questionResponses.questionId": questionId }, { projection: { questionResponses: 1 } })
+      .toArray();
+
+    // Initialize counters for each option based on question data options
+    const optionCounts = {};
+
+    // Initialize option counts with optionIds from questionData to ensure all options are included
+    questionData.options.forEach(option => {
+      optionCounts[option.optionId] = 0;
+    });
+
+    let totalResponses = 0;
+    
+    // Step 3: Aggregate responses to count the frequency of each selected option
+    users.forEach(user => {
+      const questionResponse = user.questionResponses.find(response => response.questionId === questionId);
+      if (questionResponse) {
+        totalResponses += 1;
+
+        // Count each selected option
+        questionResponse.optionSelected.forEach(optionId => {
+          if (optionCounts.hasOwnProperty(optionId)) {
+            optionCounts[optionId] += 1;
+          }
+        });
+      }
+    });
+
+    // Step 4: Calculate percentage for each option and merge with option details
+    const optionsWithStatistics = questionData.options.map(option => {
+      const frequency = optionCounts[option.optionId] || 0;
+      const percentage = totalResponses > 0 ? ((frequency / totalResponses) * 100).toFixed(2) : "0.00";
+
+      return {
+        optionId: option.optionId,
+        optionText: option.optionText,
+        optionPoint: option.optionPoint,
+        optionFrequency: frequency,
+        percentage,
+      };
+    });
+
+    // Step 5: Send response with question details and calculated statistics
+    res.status(200).json({
+      message: "Question data and all survey results retrieved successfully",
+      questionId,
+      questionText: questionData.questionText,
+      selectionType: questionData.selectionType,
+      totalResponses,
+      options: optionsWithStatistics,
+    });
+  } catch (error) {
+    console.error("Error fetching question data and responses by question ID:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+const getUniversitySurveyResultsByQuestionId = async (req, res) => {
+  const { questionId, universityId } = req.body;
+
+  try {
+    const db = getDb();
+
+    // Step 1: Fetch question data from the "questions" collection
+    const questionData = await db.collection("questions").findOne({ questionId: questionId });
+
+    if (!questionData) {
+      return res.status(404).json({ message: "Question not found" });
+    }
+
+    // Step 2: Fetch all user responses for the specific questionId and universityId from the "users" collection
+    const users = await db
+      .collection("users")
+      .find({
+        "questionResponses.questionId": questionId,
+        school: universityId,
+      }, { projection: { questionResponses: 1 } })
+      .toArray();
+
+    // Initialize counters for each option based on question data options
+    const optionCounts = {};
+    let totalResponses = 0;
+
+    // Initialize option counts with optionIds from questionData to ensure all options are included
+    questionData.options.forEach(option => {
+      optionCounts[option.optionId] = 0;
+    });
+
+    // Step 3: Aggregate responses to count the frequency of each selected option
+    users.forEach(user => {
+      const questionResponse = user.questionResponses.find(response => response.questionId === questionId);
+      if (questionResponse) {
+        totalResponses += 1;
+
+        // Count each selected option
+        questionResponse.optionSelected.forEach(optionId => {
+          if (optionCounts.hasOwnProperty(optionId)) {
+            optionCounts[optionId] += 1;
+          }
+        });
+      }
+    });
+
+    // Step 4: Calculate percentage for each option and merge with option details
+    const optionsWithStatistics = questionData.options.map(option => {
+      const frequency = optionCounts[option.optionId] || 0;
+      const percentage = totalResponses > 0 ? ((frequency / totalResponses) * 100).toFixed(2) : "0.00";
+
+      return {
+        optionId: option.optionId,
+        optionText: option.optionText,
+        optionPoint: option.optionPoint,
+        optionFrequency: frequency,
+        percentage,
+      };
+    });
+
+    // Step 5: Send response with question details and calculated statistics
+    res.status(200).json({
+      message: "Question data and university-specific survey results retrieved successfully",
+      questionId,
+      questionText: questionData.questionText,
+      selectionType: questionData.selectionType,
+      universityId,
+      totalResponses,
+      options: optionsWithStatistics,
+    });
+  } catch (error) {
+    console.error("Error fetching question data and responses by question ID:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+module.exports = {addQuestion, getAllQuestion, getQuestionById, storeAnswerById , getSurveyResultsByQuestionId , getSurveyStatistics , getLimitedUnderstandingJobOpportunities , getLackOfSkillsAndPreparedness , getConfusionAboutBranchesAndAlignment , getInternshipSelectionForJobReadiness , getCombinedOutcomePoints , getUniversityLimitedUnderstandingJobOpportunities , getUniversityLackOfSkillsAndPreparedness , getUniversityConfusionAboutBranchesAndAlignment , getUniversityInternshipSelectionForJobReadiness , getAllLimitedUnderstandingJobOpportunities , getAllLackOfSkillsAndPreparedness,getAllConfusionAboutBranchesAndAlignment ,getAllInternshipSelectionForJobReadiness,getUniversityMismatchSalaryExpectations, getUniversityInterestCareerSupportServices, getAllMismatchSalaryExpectations, getAllInterestCareerSupportServices , getMismatchSalaryExpectations , getInterestCareerSupportServices , getAllSurveyResultsByQuestionId , getUniversitySurveyResultsByQuestionId};

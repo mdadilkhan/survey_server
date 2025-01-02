@@ -1,7 +1,7 @@
 const express = require('express');
 
 const authenticateToken = require('../middleware/authToken.middleware');
-const {addQuestion, getAllQuestion, getQuestionById, storeAnswerById, getSurveyResultsByQuestionId, getSurveyStatistics, getLimitedUnderstandingJobOpportunities, getLackOfSkillsAndPreparedness, getConfusionAboutBranchesAndAlignment, getInternshipSelectionForJobReadiness, getCombinedOutcomePoints, getUniversityLimitedUnderstandingJobOpportunities, getUniversityLackOfSkillsAndPreparedness, getUniversityConfusionAboutBranchesAndAlignment, getUniversityInternshipSelectionForJobReadiness, getAllLimitedUnderstandingJobOpportunities, getAllLackOfSkillsAndPreparedness, getAllConfusionAboutBranchesAndAlignment, getAllInternshipSelectionForJobReadiness, getMismatchSalaryExpectations, getAllMismatchSalaryExpectations, getUniversityMismatchSalaryExpectations, getInterestCareerSupportServices, getAllInterestCareerSupportServices, getUniversityInterestCareerSupportServices} = require('../controller/question.controller');
+const {addQuestion, getAllQuestion, getQuestionById, storeAnswerById, getSurveyResultsByQuestionId, getSurveyStatistics, getLimitedUnderstandingJobOpportunities, getLackOfSkillsAndPreparedness, getConfusionAboutBranchesAndAlignment, getInternshipSelectionForJobReadiness, getCombinedOutcomePoints, getUniversityLimitedUnderstandingJobOpportunities, getUniversityLackOfSkillsAndPreparedness, getUniversityConfusionAboutBranchesAndAlignment, getUniversityInternshipSelectionForJobReadiness, getAllLimitedUnderstandingJobOpportunities, getAllLackOfSkillsAndPreparedness, getAllConfusionAboutBranchesAndAlignment, getAllInternshipSelectionForJobReadiness, getMismatchSalaryExpectations, getAllMismatchSalaryExpectations, getUniversityMismatchSalaryExpectations, getInterestCareerSupportServices, getAllInterestCareerSupportServices, getUniversityInterestCareerSupportServices, getUniversitySurveyResultsByQuestionId, getAllSurveyResultsByQuestionId} = require('../controller/question.controller');
 
 const questionRouter = express.Router();
 
@@ -31,5 +31,7 @@ questionRouter.get('/question/intrest-career',getInterestCareerSupportServices)
 questionRouter.get('/question/all-intrest-career',getAllInterestCareerSupportServices)
 questionRouter.post('/question/intrest-career-university',getUniversityInterestCareerSupportServices)
 questionRouter.get('/question/outcome/:userId',getCombinedOutcomePoints)
+questionRouter.get('/question/getAllSurveyResultsByQuestionId/:questionId', getAllSurveyResultsByQuestionId)
+questionRouter.post('/question/getAllSurveyResultsByQuestionId', getUniversitySurveyResultsByQuestionId)
 
 module.exports = questionRouter;

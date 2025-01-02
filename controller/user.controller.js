@@ -407,6 +407,97 @@ const getAllSlots = async (req, res) => {
   }
 };
 
+const getStudentsByUniversity = async (req, res) => {
+  const { universityId } = req.params; // Assuming universityId is passed as a request parameter
+
+  try {
+    const db = getDb();
+    const usersCollection = db.collection("users");
+
+    // Fetch all students from the specified university with selected fields
+    const students = await usersCollection.find(
+      { school: universityId },
+      { projection: { name: 1, email: 1, phone: 1, course: 1, year: 1 } }
+    ).toArray();
+
+    if (!students || students.length === 0) {
+      return res.status(404).json({ message: "No students found for the specified university" });
+    }
+
+    // Return the list of students
+    res.status(200).json({
+      message: "Students fetched successfully",
+      data: students,
+    });
+  } catch (error) {
+    console.error("Error fetching students by university:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+const getStudentStatistics = async (req, res) => {
+  try {
+    const db = getDb();
+    const usersCollection = db.collection("users");
+
+    // Fetch total number of students
+    const totalStudents = await usersCollection.countDocuments();
+
+    // Fetch total number of postgraduate students
+    const totalPostgrad = await usersCollection.countDocuments({ course: "postgraduate" });
+
+    // Fetch total number of undergraduate students
+    const totalUndergrad = await usersCollection.countDocuments({ course: "undergraduate" });
+
+    res.status(200).json({
+      message: "Student statistics fetched successfully",
+      data: {
+        totalStudents,
+        totalPostgrad,
+        totalUndergrad,
+      },
+    });
+  } catch (error) {
+    console.error("Error fetching student statistics:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+const getUniversityWiseStudentStatistics = async (req, res) => {
+  const { universityId } = req.params; // Assuming universityId is passed as a request parameter
+
+  try {
+    const db = getDb();
+    const usersCollection = db.collection("users");
+
+    // Fetch total number of students for the university
+    const totalStudents = await usersCollection.countDocuments({ school: universityId });
+
+    // Fetch total number of postgraduate students for the university
+    const totalPostgrad = await usersCollection.countDocuments({ school: universityId, course: "postgraduate" });
+
+    // Fetch total number of undergraduate students for the university
+    const totalUndergrad = await usersCollection.countDocuments({ school: universityId, course: "undergraduate" });
+
+    if (totalStudents === 0) {
+      return res.status(404).json({ message: "No students found for the specified university" });
+    }
+
+    res.status(200).json({
+      message: "University-wise student statistics fetched successfully",
+      data: {
+        universityId,
+        totalStudents,
+        totalPostgrad,
+        totalUndergrad,
+      },
+    });
+  } catch (error) {
+    console.error("Error fetching university-wise student statistics:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
 module.exports = {
   getUserDetails,
   contactSupport,
@@ -414,5 +505,8 @@ module.exports = {
   createOrder,
   verifyOrder,
   createSlots,
-  getAllSlots
+  getAllSlots,
+  getStudentsByUniversity,
+  getStudentStatistics,
+  getUniversityWiseStudentStatistics
 };
