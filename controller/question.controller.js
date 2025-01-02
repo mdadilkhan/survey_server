@@ -539,6 +539,136 @@ const getInternshipSelectionForJobReadiness = async (req, res) => {
   }
 };
 
+const getMismatchSalaryExpectations = async (req, res) => {
+  const { userId } = req.params;  // Assuming userId is passed in the request parameters
+
+  try {
+    const db = getDb();
+    const usersCollection = db.collection("users");
+
+    // Fetch the user's responses for the questions (Q7, Q8)
+    const user = await usersCollection.findOne({ _id: new ObjectId(userId) });
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    // Extract the responses for questions 7 and 8
+    const question7Response = user.questionResponses.find((response) => response.questionId === "7");
+    const question8Response = user.questionResponses.find((response) => response.questionId === "8");
+
+    // Initialize outcome points for each question
+    let q7OutcomePoints = 0;
+    let q8OutcomePoints = 0;
+
+    // Calculate outcome points for Q7 (only one option selected)
+    if (question7Response) {
+      const option = question7Response.optionSelected[0];
+      const question7 = await db.collection("questions").findOne({ questionId: "7" });
+      const option7 = question7.options.find((opt) => opt.optionId === option);
+      q7OutcomePoints = option7 ? option7.outcomePoint : 0;
+    }
+
+    // Calculate outcome points for Q8 (only one option selected)
+    if (question8Response) {
+      const option = question8Response.optionSelected[0];
+      const question8 = await db.collection("questions").findOne({ questionId: "8" });
+      const option8 = question8.options.find((opt) => opt.optionId === option);
+      q8OutcomePoints = option8 ? option8.outcomePoint : 0;
+    }
+
+    const question7Outcome = q7OutcomePoints * 0.5;
+    const question8Outcome = q8OutcomePoints * 0.5;
+
+    // Calculate the total outcome points from Q7 and Q8
+    const totalOutcomePoints = question7Outcome + question8Outcome;
+
+    // Return the result
+    res.status(200).json({
+      message: "Outcome points for Mismatch Salary Expectations calculated successfully",
+      data: {
+        question7Outcome,
+        question8Outcome,
+        totalOutcomePoints,
+      },
+    });
+  } catch (error) {
+    console.error("Error fetching outcome points:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+const getInterestCareerSupportServices = async (req, res) => {
+  const { userId } = req.params;  // Assuming userId is passed in the request parameters
+
+  try {
+    const db = getDb();
+    const usersCollection = db.collection("users");
+
+    // Fetch the user's responses for the questions (Q11, Q13, Q10)
+    const user = await usersCollection.findOne({ _id: new ObjectId(userId) });
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    // Extract the responses for questions 11, 13, and 10
+    const question11Response = user.questionResponses.find((response) => response.questionId === "11");
+    const question13Response = user.questionResponses.find((response) => response.questionId === "13");
+    const question10Response = user.questionResponses.find((response) => response.questionId === "10");
+
+    // Initialize outcome points for each question
+    let q11OutcomePoints = 0;
+    let q13OutcomePoints = 0;
+    let q10OutcomePoints = 0;
+
+    // Calculate outcome points for Q11 (only one option selected)
+    if (question11Response) {
+      const option = question11Response.optionSelected[0];
+      const question11 = await db.collection("questions").findOne({ questionId: "11" });
+      const option11 = question11.options.find((opt) => opt.optionId === option);
+      q11OutcomePoints = option11 ? option11.outcomePoint : 0;
+    }
+
+    // Calculate outcome points for Q13 (only one option selected)
+    if (question13Response) {
+      const option = question13Response.optionSelected[0];
+      const question13 = await db.collection("questions").findOne({ questionId: "13" });
+      const option13 = question13.options.find((opt) => opt.optionId === option);
+      q13OutcomePoints = option13 ? option13.outcomePoint : 0;
+    }
+
+    // Calculate outcome points for Q10 (only one option selected)
+    if (question10Response) {
+      const option = question10Response.optionSelected[0];
+      const question10 = await db.collection("questions").findOne({ questionId: "10" });
+      const option10 = question10.options.find((opt) => opt.optionId === option);
+      q10OutcomePoints = option10 ? option10.outcomePoint : 0;
+    }
+
+    const question11Outcome = q11OutcomePoints * 0.4;
+    const question13Outcome = q13OutcomePoints * 0.4;
+    const question10Outcome = q10OutcomePoints * 0.2;
+
+    // Calculate the total outcome points from Q11, Q13, and Q10
+    const totalOutcomePoints = question11Outcome + question13Outcome + question10Outcome;
+
+    // Return the result
+    res.status(200).json({
+      message: "Outcome points for Interest Career Support Services calculated successfully",
+      data: {
+        question11Outcome,
+        question13Outcome,
+        question10Outcome,
+        totalOutcomePoints,
+      },
+    });
+  } catch (error) {
+    console.error("Error fetching outcome points:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
 const getCombinedOutcomePoints = async (req, res) => {
   const { userId } = req.params; // Assuming userId is passed in the request parameters
 
@@ -630,4 +760,890 @@ const getCombinedOutcomePoints = async (req, res) => {
   }
 };
 
-module.exports = {addQuestion, getAllQuestion, getQuestionById, storeAnswerById , getSurveyResultsByQuestionId , getSurveyStatistics , getLimitedUnderstandingJobOpportunities , getLackOfSkillsAndPreparedness , getConfusionAboutBranchesAndAlignment , getInternshipSelectionForJobReadiness , getCombinedOutcomePoints};
+const getUniversityLimitedUnderstandingJobOpportunities = async (req, res) => {
+  const { universityId , year} = req.body; // Assuming universityId is passed as a request parameter
+  try {
+    const db = getDb();
+    const usersCollection = db.collection("users");
+
+    // Fetch all users from the specified university
+    const users = await usersCollection.find({ school: universityId , year}).toArray();
+
+    if (!users || users.length === 0) {
+      return res.status(404).json({ message: "No users found for the specified university" });
+    }
+
+    let totalOutcomePoints = 0;
+    let totalUsers = 0;
+
+    for (const user of users) {
+      // Extract responses for questions 1, 2, and 3
+      const question1Response = user.questionResponses.find((response) => response.questionId === "1");
+      const question2Response = user.questionResponses.find((response) => response.questionId === "2");
+      const question3Response = user.questionResponses.find((response) => response.questionId === "3");
+
+      // Initialize outcome points for each question
+      let q1OutcomePoints = 0;
+      let q2OutcomePoints = 0;
+      let q3OutcomePoints = 0;
+
+      // Calculate outcome points for Q1
+      if (question1Response) {
+        const option = question1Response.optionSelected[0];
+        const question1 = await db.collection("questions").findOne({ questionId: "1" });
+        const option1 = question1.options.find((opt) => opt.optionId === option);
+        q1OutcomePoints = option1 ? option1.outcomePoint : 0;
+      }
+
+      // Calculate outcome points for Q2
+      if (question2Response) {
+        const question2 = await db.collection("questions").findOne({ questionId: "2" });
+        for (let optionId of question2Response.optionSelected) {
+          const option2 = question2.options.find((opt) => opt.optionId === optionId);
+          q2OutcomePoints += option2 ? option2.outcomePoint : 0;
+        }
+      }
+
+      // Calculate outcome points for Q3
+      if (question3Response) {
+        const question3 = await db.collection("questions").findOne({ questionId: "3" });
+        for (let optionId of question3Response.optionSelected) {
+          const option3 = question3.options.find((opt) => opt.optionId === optionId);
+          q3OutcomePoints += option3 ? option3.outcomePoint : 0;
+        }
+      }
+
+      const question1Outcome = q1OutcomePoints * 0.4;
+      const question2Outcome = (q2OutcomePoints / 4) * 0.3;
+      const question3Outcome = (q3OutcomePoints / 4) * 0.3;
+
+      // Calculate the total outcome points for the user
+      const userOutcomePoints = question1Outcome + question2Outcome + question3Outcome;
+
+      // Add the user's points to the university's total and increment the user count
+      totalOutcomePoints += userOutcomePoints;
+      totalUsers += 1;
+    }
+
+    // Calculate the average outcome points for the university
+    const averageOutcomePoints = totalOutcomePoints / totalUsers;
+
+    // Return the result
+    res.status(200).json({
+      message: "University outcome points calculated successfully",
+      data: {
+        universityId,
+        totalUsers,
+        totalOutcomePoints,
+        averageOutcomePoints,
+      },
+    });
+  } catch (error) {
+    console.error("Error fetching university outcome points:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+const getUniversityLackOfSkillsAndPreparedness = async (req, res) => {
+  const { universityId , year} = req.body; // Assuming universityId is passed as a request parameter
+
+  try {
+    const db = getDb();
+    const usersCollection = db.collection("users");
+
+    // Fetch all users from the specified university
+    const users = await usersCollection.find({ school: universityId , year}).toArray();
+
+    if (!users || users.length === 0) {
+      return res.status(404).json({ message: "No users found for the specified university" });
+    }
+
+    let totalOutcomePoints = 0;
+    let totalUsers = 0;
+
+    for (const user of users) {
+      const question4Response = user.questionResponses.find((response) => response.questionId === "4");
+      const question5Response = user.questionResponses.find((response) => response.questionId === "5");
+      const question10Response = user.questionResponses.find((response) => response.questionId === "10");
+
+      let q4OutcomePoints = 0;
+      let q5OutcomePoints = 0;
+      let q10OutcomePoints = 0;
+
+      if (question4Response) {
+        const option = question4Response.optionSelected[0];
+        const question4 = await db.collection("questions").findOne({ questionId: "4" });
+        const option4 = question4.options.find((opt) => opt.optionId === option);
+        q4OutcomePoints = option4 ? option4.outcomePoint : 0;
+      }
+
+      if (question5Response) {
+        const option = question5Response.optionSelected[0];
+        const question5 = await db.collection("questions").findOne({ questionId: "5" });
+        const option5 = question5.options.find((opt) => opt.optionId === option);
+        q5OutcomePoints = option5 ? option5.outcomePoint : 0;
+      }
+
+      if (question10Response) {
+        const option = question10Response.optionSelected[0];
+        const question10 = await db.collection("questions").findOne({ questionId: "10" });
+        const option10 = question10.options.find((opt) => opt.optionId === option);
+        q10OutcomePoints = option10 ? option10.outcomePoint : 0;
+      }
+
+      const question4Outcome = q4OutcomePoints * 0.4;
+      const question5Outcome = q5OutcomePoints * 0.3;
+      const question10Outcome = q10OutcomePoints * 0.3;
+
+      const userOutcomePoints = question4Outcome + question5Outcome + question10Outcome;
+
+      totalOutcomePoints += userOutcomePoints;
+      totalUsers += 1;
+    }
+
+    const averageOutcomePoints = totalOutcomePoints / totalUsers;
+
+    res.status(200).json({
+      message: "University outcome points for Lack of Skills and Preparedness calculated successfully",
+      data: {
+        universityId,
+        totalUsers,
+        totalOutcomePoints,
+        averageOutcomePoints,
+      },
+    });
+  } catch (error) {
+    console.error("Error fetching university outcome points:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+const getUniversityConfusionAboutBranchesAndAlignment = async (req, res) => {
+  const { universityId , year} = req.body; // Assuming universityId is passed as a request parameter
+
+  try {
+    const db = getDb();
+    const usersCollection = db.collection("users");
+
+    const users = await usersCollection.find({ school: universityId , year}).toArray();
+
+    if (!users || users.length === 0) {
+      return res.status(404).json({ message: "No users found for the specified university" });
+    }
+
+    let totalOutcomePoints = 0;
+    let totalUsers = 0;
+
+    for (const user of users) {
+      const question2Response = user.questionResponses.find((response) => response.questionId === "2");
+      const question6Response = user.questionResponses.find((response) => response.questionId === "6");
+      const question13Response = user.questionResponses.find((response) => response.questionId === "13");
+
+      let q2OutcomePoints = 0;
+      let q6OutcomePoints = 0;
+      let q13OutcomePoints = 0;
+
+      if (question2Response) {
+        const option = question2Response.optionSelected[0];
+        const question2 = await db.collection("questions").findOne({ questionId: "2" });
+        const option2 = question2.options.find((opt) => opt.optionId === option);
+        q2OutcomePoints = option2 ? option2.outcomePoint : 0;
+      }
+
+      if (question6Response) {
+        const option = question6Response.optionSelected[0];
+        const question6 = await db.collection("questions").findOne({ questionId: "6" });
+        const option6 = question6.options.find((opt) => opt.optionId === option);
+        q6OutcomePoints = option6 ? option6.outcomePoint : 0;
+      }
+
+      if (question13Response) {
+        const option = question13Response.optionSelected[0];
+        const question13 = await db.collection("questions").findOne({ questionId: "13" });
+        const option13 = question13.options.find((opt) => opt.optionId === option);
+        q13OutcomePoints = option13 ? option13.outcomePoint : 0;
+      }
+
+      const question2Outcome = q2OutcomePoints * 0.35;
+      const question6Outcome = q6OutcomePoints * 0.35;
+      const question13Outcome = q13OutcomePoints * 0.3;
+
+      const userOutcomePoints = question2Outcome + question6Outcome + question13Outcome;
+
+      totalOutcomePoints += userOutcomePoints;
+      totalUsers += 1;
+    }
+
+    const averageOutcomePoints = totalOutcomePoints / totalUsers;
+
+    res.status(200).json({
+      message: "University outcome points for Confusion About Branches & Alignment calculated successfully",
+      data: {
+        universityId,
+        totalUsers,
+        totalOutcomePoints,
+        averageOutcomePoints,
+      },
+    });
+  } catch (error) {
+    console.error("Error fetching university outcome points:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+const getUniversityInternshipSelectionForJobReadiness = async (req, res) => {
+  const { universityId , year} = req.body; // Assuming universityId is passed as a request parameter
+
+  try {
+    const db = getDb();
+    const usersCollection = db.collection("users");
+
+    const users = await usersCollection.find({ school: universityId , year}).toArray();
+
+    if (!users || users.length === 0) {
+      return res.status(404).json({ message: "No users found for the specified university" });
+    }
+
+    let totalOutcomePoints = 0;
+    let totalUsers = 0;
+
+    for (const user of users) {
+      const question5Response = user.questionResponses.find((response) => response.questionId === "5");
+      const question9Response = user.questionResponses.find((response) => response.questionId === "9");
+      const question10Response = user.questionResponses.find((response) => response.questionId === "10");
+      const question12Response = user.questionResponses.find((response) => response.questionId === "12");
+
+      let q5OutcomePoints = 0;
+      let q9OutcomePoints = 0;
+      let q10OutcomePoints = 0;
+      let q12OutcomePoints = 0;
+
+      if (question5Response) {
+        const option = question5Response.optionSelected[0];
+        const question5 = await db.collection("questions").findOne({ questionId: "5" });
+        const option5 = question5.options.find((opt) => opt.optionId === option);
+        q5OutcomePoints = option5 ? option5.outcomePoint : 0;
+      }
+
+      if (question9Response) {
+        const question9 = await db.collection("questions").findOne({ questionId: "9" });
+        for (let optionId of question9Response.optionSelected) {
+          const option9 = question9.options.find((opt) => opt.optionId === optionId);
+          q9OutcomePoints += option9 ? option9.outcomePoint : 0;
+        }
+      }
+
+      if (question10Response) {
+        const option = question10Response.optionSelected[0];
+        const question10 = await db.collection("questions").findOne({ questionId: "10" });
+        const option10 = question10.options.find((opt) => opt.optionId === option);
+        q10OutcomePoints = option10 ? option10.outcomePoint : 0;
+      }
+
+      if (question12Response) {
+        const option = question12Response.optionSelected[0];
+        const question12 = await db.collection("questions").findOne({ questionId: "12" });
+        const option12 = question12.options.find((opt) => opt.optionId === option);
+        q12OutcomePoints = option12 ? option12.outcomePoint : 0;
+      }
+
+      const question5Outcome = q5OutcomePoints * 0.25;
+      const question9Outcome = (q9OutcomePoints / 4) * 0.3;
+      const question10Outcome = q10OutcomePoints * 0.25;
+      const question12Outcome = q12OutcomePoints * 0.2;
+
+      const userOutcomePoints = question5Outcome + question9Outcome + question10Outcome + question12Outcome;
+
+      totalOutcomePoints += userOutcomePoints;
+      totalUsers += 1;
+    }
+
+    const averageOutcomePoints = totalOutcomePoints / totalUsers;
+
+    res.status(200).json({
+      message: "University outcome points for Internship Selection for Job Readiness calculated successfully",
+      data: {
+        universityId,
+        totalUsers,
+        totalOutcomePoints,
+        averageOutcomePoints,
+      },
+    });
+  } catch (error) {
+    console.error("Error fetching university outcome points:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+const getAllLimitedUnderstandingJobOpportunities = async (req, res) => {
+  try {
+    const db = getDb();
+    const usersCollection = db.collection("users");
+
+    // Fetch all users
+    const users = await usersCollection.find({}).toArray();
+
+    if (!users || users.length === 0) {
+      return res.status(404).json({ message: "No users found" });
+    }
+
+    let totalOutcomePoints = 0;
+    let totalUsers = 0;
+
+    for (const user of users) {
+      // Extract responses for questions 1, 2, and 3
+      const question1Response = user.questionResponses.find((response) => response.questionId === "1");
+      const question2Response = user.questionResponses.find((response) => response.questionId === "2");
+      const question3Response = user.questionResponses.find((response) => response.questionId === "3");
+
+      // Initialize outcome points for each question
+      let q1OutcomePoints = 0;
+      let q2OutcomePoints = 0;
+      let q3OutcomePoints = 0;
+
+      // Calculate outcome points for Q1
+      if (question1Response) {
+        const option = question1Response.optionSelected[0];
+        const question1 = await db.collection("questions").findOne({ questionId: "1" });
+        const option1 = question1.options.find((opt) => opt.optionId === option);
+        q1OutcomePoints = option1 ? option1.outcomePoint : 0;
+      }
+
+      // Calculate outcome points for Q2
+      if (question2Response) {
+        const question2 = await db.collection("questions").findOne({ questionId: "2" });
+        for (let optionId of question2Response.optionSelected) {
+          const option2 = question2.options.find((opt) => opt.optionId === optionId);
+          q2OutcomePoints += option2 ? option2.outcomePoint : 0;
+        }
+      }
+
+      // Calculate outcome points for Q3
+      if (question3Response) {
+        const question3 = await db.collection("questions").findOne({ questionId: "3" });
+        for (let optionId of question3Response.optionSelected) {
+          const option3 = question3.options.find((opt) => opt.optionId === optionId);
+          q3OutcomePoints += option3 ? option3.outcomePoint : 0;
+        }
+      }
+
+      const question1Outcome = q1OutcomePoints * 0.4;
+      const question2Outcome = (q2OutcomePoints / 4) * 0.3;
+      const question3Outcome = (q3OutcomePoints / 4) * 0.3;
+
+      // Calculate the total outcome points for the user
+      const userOutcomePoints = question1Outcome + question2Outcome + question3Outcome;
+
+      // Add the user's points to the total and increment the user count
+      totalOutcomePoints += userOutcomePoints;
+      totalUsers += 1;
+    }
+
+    // Calculate the average outcome points for all users
+    const averageOutcomePoints = totalOutcomePoints / totalUsers;
+
+    // Return the result
+    res.status(200).json({
+      message: "Outcome points calculated successfully for all users",
+      data: {
+        totalUsers,
+        totalOutcomePoints,
+        averageOutcomePoints,
+      },
+    });
+  } catch (error) {
+    console.error("Error fetching outcome points for all users:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+const getAllLackOfSkillsAndPreparedness = async (req, res) => {
+  try {
+    const db = getDb();
+    const usersCollection = db.collection("users");
+
+    // Fetch all users
+    const users = await usersCollection.find({}).toArray();
+
+    if (!users || users.length === 0) {
+      return res.status(404).json({ message: "No users found" });
+    }
+
+    let totalOutcomePoints = 0;
+    let totalUsers = 0;
+
+    for (const user of users) {
+      const question4Response = user.questionResponses.find((response) => response.questionId === "4");
+      const question5Response = user.questionResponses.find((response) => response.questionId === "5");
+      const question10Response = user.questionResponses.find((response) => response.questionId === "10");
+
+      let q4OutcomePoints = 0;
+      let q5OutcomePoints = 0;
+      let q10OutcomePoints = 0;
+
+      if (question4Response) {
+        const option = question4Response.optionSelected[0];
+        const question4 = await db.collection("questions").findOne({ questionId: "4" });
+        const option4 = question4.options.find((opt) => opt.optionId === option);
+        q4OutcomePoints = option4 ? option4.outcomePoint : 0;
+      }
+
+      if (question5Response) {
+        const option = question5Response.optionSelected[0];
+        const question5 = await db.collection("questions").findOne({ questionId: "5" });
+        const option5 = question5.options.find((opt) => opt.optionId === option);
+        q5OutcomePoints = option5 ? option5.outcomePoint : 0;
+      }
+
+      if (question10Response) {
+        const option = question10Response.optionSelected[0];
+        const question10 = await db.collection("questions").findOne({ questionId: "10" });
+        const option10 = question10.options.find((opt) => opt.optionId === option);
+        q10OutcomePoints = option10 ? option10.outcomePoint : 0;
+      }
+
+      const question4Outcome = q4OutcomePoints * 0.4;
+      const question5Outcome = q5OutcomePoints * 0.3;
+      const question10Outcome = q10OutcomePoints * 0.3;
+
+      const userOutcomePoints = question4Outcome + question5Outcome + question10Outcome;
+
+      totalOutcomePoints += userOutcomePoints;
+      totalUsers += 1;
+    }
+
+    const averageOutcomePoints = totalOutcomePoints / totalUsers;
+
+    res.status(200).json({
+      message: "Outcome points for Lack of Skills and Preparedness calculated successfully for all users",
+      data: {
+        totalUsers,
+        totalOutcomePoints,
+        averageOutcomePoints,
+      },
+    });
+  } catch (error) {
+    console.error("Error fetching outcome points for Lack of Skills and Preparedness:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+const getAllConfusionAboutBranchesAndAlignment = async (req, res) => {
+  try {
+    const db = getDb();
+    const usersCollection = db.collection("users");
+
+    const users = await usersCollection.find({}).toArray();
+
+    if (!users || users.length === 0) {
+      return res.status(404).json({ message: "No users found" });
+    }
+
+    let totalOutcomePoints = 0;
+    let totalUsers = 0;
+
+    for (const user of users) {
+      const question2Response = user.questionResponses.find((response) => response.questionId === "2");
+      const question6Response = user.questionResponses.find((response) => response.questionId === "6");
+      const question13Response = user.questionResponses.find((response) => response.questionId === "13");
+
+      let q2OutcomePoints = 0;
+      let q6OutcomePoints = 0;
+      let q13OutcomePoints = 0;
+
+      if (question2Response) {
+        const option = question2Response.optionSelected[0];
+        const question2 = await db.collection("questions").findOne({ questionId: "2" });
+        const option2 = question2.options.find((opt) => opt.optionId === option);
+        q2OutcomePoints = option2 ? option2.outcomePoint : 0;
+      }
+
+      if (question6Response) {
+        const option = question6Response.optionSelected[0];
+        const question6 = await db.collection("questions").findOne({ questionId: "6" });
+        const option6 = question6.options.find((opt) => opt.optionId === option);
+        q6OutcomePoints = option6 ? option6.outcomePoint : 0;
+      }
+
+      if (question13Response) {
+        const option = question13Response.optionSelected[0];
+        const question13 = await db.collection("questions").findOne({ questionId: "13" });
+        const option13 = question13.options.find((opt) => opt.optionId === option);
+        q13OutcomePoints = option13 ? option13.outcomePoint : 0;
+      }
+
+      const question2Outcome = q2OutcomePoints * 0.35;
+      const question6Outcome = q6OutcomePoints * 0.35;
+      const question13Outcome = q13OutcomePoints * 0.3;
+
+      const userOutcomePoints = question2Outcome + question6Outcome + question13Outcome;
+
+      totalOutcomePoints += userOutcomePoints;
+      totalUsers += 1;
+    }
+
+    const averageOutcomePoints = totalOutcomePoints / totalUsers;
+
+    res.status(200).json({
+      message: "Outcome points for Confusion About Branches and Alignment calculated successfully for all users",
+      data: {
+        totalUsers,
+        totalOutcomePoints,
+        averageOutcomePoints,
+      },
+    });
+  } catch (error) {
+    console.error("Error fetching outcome points for Confusion About Branches and Alignment:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+const getAllInternshipSelectionForJobReadiness = async (req, res) => {
+  try {
+    const db = getDb();
+    const usersCollection = db.collection("users");
+
+    const users = await usersCollection.find({}).toArray();
+
+    if (!users || users.length === 0) {
+      return res.status(404).json({ message: "No users found" });
+    }
+
+    let totalOutcomePoints = 0;
+    let totalUsers = 0;
+
+    for (const user of users) {
+      const question5Response = user.questionResponses.find((response) => response.questionId === "5");
+      const question9Response = user.questionResponses.find((response) => response.questionId === "9");
+      const question10Response = user.questionResponses.find((response) => response.questionId === "10");
+      const question12Response = user.questionResponses.find((response) => response.questionId === "12");
+
+      let q5OutcomePoints = 0;
+      let q9OutcomePoints = 0;
+      let q10OutcomePoints = 0;
+      let q12OutcomePoints = 0;
+
+      if (question5Response) {
+        const option = question5Response.optionSelected[0];
+        const question5 = await db.collection("questions").findOne({ questionId: "5" });
+        const option5 = question5.options.find((opt) => opt.optionId === option);
+        q5OutcomePoints = option5 ? option5.outcomePoint : 0;
+      }
+
+      if (question9Response) {
+        const question9 = await db.collection("questions").findOne({ questionId: "9" });
+        for (let optionId of question9Response.optionSelected) {
+          const option9 = question9.options.find((opt) => opt.optionId === optionId);
+          q9OutcomePoints += option9 ? option9.outcomePoint : 0;
+        }
+      }
+
+      if (question10Response) {
+        const option = question10Response.optionSelected[0];
+        const question10 = await db.collection("questions").findOne({ questionId: "10" });
+        const option10 = question10.options.find((opt) => opt.optionId === option);
+        q10OutcomePoints = option10 ? option10.outcomePoint : 0;
+      }
+
+      if (question12Response) {
+        const option = question12Response.optionSelected[0];
+        const question12 = await db.collection("questions").findOne({ questionId: "12" });
+        const option12 = question12.options.find((opt) => opt.optionId === option);
+        q12OutcomePoints = option12 ? option12.outcomePoint : 0;
+      }
+
+      const question5Outcome = q5OutcomePoints * 0.25;
+      const question9Outcome = (q9OutcomePoints / 4) * 0.3;
+      const question10Outcome = q10OutcomePoints * 0.25;
+      const question12Outcome = q12OutcomePoints * 0.2;
+
+      const userOutcomePoints = question5Outcome + question9Outcome + question10Outcome + question12Outcome;
+
+      totalOutcomePoints += userOutcomePoints;
+      totalUsers += 1;
+    }
+
+    const averageOutcomePoints = totalOutcomePoints / totalUsers;
+
+    res.status(200).json({
+      message: "Outcome points for Internship Selection for Job Readiness calculated successfully for all users",
+      data: {
+        totalUsers,
+        totalOutcomePoints,
+        averageOutcomePoints,
+      },
+    });
+  } catch (error) {
+    console.error("Error fetching outcome points for Internship Selection for Job Readiness:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+const getUniversityMismatchSalaryExpectations = async (req, res) => {
+  const { universityId , year} = req.body; // Assuming universityId is passed as a request parameter
+
+  try {
+    const db = getDb();
+    const usersCollection = db.collection("users");
+
+    // Fetch all users from the specified university
+    const users = await usersCollection.find({ school: universityId , year}).toArray();
+
+    if (!users || users.length === 0) {
+      return res.status(404).json({ message: "No users found for the specified university" });
+    }
+
+    let totalOutcomePoints = 0;
+    let totalUsers = 0;
+
+    for (const user of users) {
+      const question7Response = user.questionResponses.find((response) => response.questionId === "7");
+      const question8Response = user.questionResponses.find((response) => response.questionId === "8");
+
+      let q7OutcomePoints = 0;
+      let q8OutcomePoints = 0;
+
+      if (question7Response) {
+        const option = question7Response.optionSelected[0];
+        const question7 = await db.collection("questions").findOne({ questionId: "7" });
+        const option7 = question7.options.find((opt) => opt.optionId === option);
+        q7OutcomePoints = option7 ? option7.outcomePoint : 0;
+      }
+
+      if (question8Response) {
+        const option = question8Response.optionSelected[0];
+        const question8 = await db.collection("questions").findOne({ questionId: "8" });
+        const option8 = question8.options.find((opt) => opt.optionId === option);
+        q8OutcomePoints = option8 ? option8.outcomePoint : 0;
+      }
+
+      const question7Outcome = q7OutcomePoints * 0.5;
+      const question8Outcome = q8OutcomePoints * 0.5;
+
+      const userOutcomePoints = question7Outcome + question8Outcome;
+
+      totalOutcomePoints += userOutcomePoints;
+      totalUsers += 1;
+    }
+
+    const averageOutcomePoints = totalOutcomePoints / totalUsers;
+
+    res.status(200).json({
+      message: "University outcome points for Mismatch Salary Expectations calculated successfully",
+      data: {
+        universityId,
+        totalUsers,
+        totalOutcomePoints,
+        averageOutcomePoints,
+      },
+    });
+  } catch (error) {
+    console.error("Error fetching university outcome points:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+const getUniversityInterestCareerSupportServices = async (req, res) => {
+  const { universityId , year} = req.body; // Assuming universityId is passed as a request parameter
+
+  try {
+    const db = getDb();
+    const usersCollection = db.collection("users");
+
+    const users = await usersCollection.find({ school: universityId , year }).toArray();
+
+    if (!users || users.length === 0) {
+      return res.status(404).json({ message: "No users found for the specified university" });
+    }
+
+    let totalOutcomePoints = 0;
+    let totalUsers = 0;
+
+    for (const user of users) {
+      const question11Response = user.questionResponses.find((response) => response.questionId === "11");
+      const question13Response = user.questionResponses.find((response) => response.questionId === "13");
+      const question10Response = user.questionResponses.find((response) => response.questionId === "10");
+
+      let q11OutcomePoints = 0;
+      let q13OutcomePoints = 0;
+      let q10OutcomePoints = 0;
+
+      if (question11Response) {
+        const option = question11Response.optionSelected[0];
+        const question11 = await db.collection("questions").findOne({ questionId: "11" });
+        const option11 = question11.options.find((opt) => opt.optionId === option);
+        q11OutcomePoints = option11 ? option11.outcomePoint : 0;
+      }
+
+      if (question13Response) {
+        const option = question13Response.optionSelected[0];
+        const question13 = await db.collection("questions").findOne({ questionId: "13" });
+        const option13 = question13.options.find((opt) => opt.optionId === option);
+        q13OutcomePoints = option13 ? option13.outcomePoint : 0;
+      }
+
+      if (question10Response) {
+        const option = question10Response.optionSelected[0];
+        const question10 = await db.collection("questions").findOne({ questionId: "10" });
+        const option10 = question10.options.find((opt) => opt.optionId === option);
+        q10OutcomePoints = option10 ? option10.outcomePoint : 0;
+      }
+
+      const question11Outcome = q11OutcomePoints * 0.4;
+      const question13Outcome = q13OutcomePoints * 0.4;
+      const question10Outcome = q10OutcomePoints * 0.2;
+
+      const userOutcomePoints = question11Outcome + question13Outcome + question10Outcome;
+
+      totalOutcomePoints += userOutcomePoints;
+      totalUsers += 1;
+    }
+
+    const averageOutcomePoints = totalOutcomePoints / totalUsers;
+
+    res.status(200).json({
+      message: "University outcome points for Interest Career Support Services calculated successfully",
+      data: {
+        universityId,
+        totalUsers,
+        totalOutcomePoints,
+        averageOutcomePoints,
+      },
+    });
+  } catch (error) {
+    console.error("Error fetching university outcome points:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+const getAllMismatchSalaryExpectations = async (req, res) => {
+  try {
+    const db = getDb();
+    const usersCollection = db.collection("users");
+
+    const users = await usersCollection.find({}).toArray();
+
+    if (!users || users.length === 0) {
+      return res.status(404).json({ message: "No users found" });
+    }
+
+    let totalOutcomePoints = 0;
+    let totalUsers = 0;
+
+    for (const user of users) {
+      const question7Response = user.questionResponses.find((response) => response.questionId === "7");
+      const question8Response = user.questionResponses.find((response) => response.questionId === "8");
+
+      let q7OutcomePoints = 0;
+      let q8OutcomePoints = 0;
+
+      if (question7Response) {
+        const option = question7Response.optionSelected[0];
+        const question7 = await db.collection("questions").findOne({ questionId: "7" });
+        const option7 = question7.options.find((opt) => opt.optionId === option);
+        q7OutcomePoints = option7 ? option7.outcomePoint : 0;
+      }
+
+      if (question8Response) {
+        const option = question8Response.optionSelected[0];
+        const question8 = await db.collection("questions").findOne({ questionId: "8" });
+        const option8 = question8.options.find((opt) => opt.optionId === option);
+        q8OutcomePoints = option8 ? option8.outcomePoint : 0;
+      }
+
+      const question7Outcome = q7OutcomePoints * 0.5;
+      const question8Outcome = q8OutcomePoints * 0.5;
+
+      const userOutcomePoints = question7Outcome + question8Outcome;
+
+      totalOutcomePoints += userOutcomePoints;
+      totalUsers += 1;
+    }
+
+    const averageOutcomePoints = totalOutcomePoints / totalUsers;
+
+    res.status(200).json({
+      message: "Outcome points for Mismatch Salary Expectations calculated successfully for all users",
+      data: {
+        totalUsers,
+        totalOutcomePoints,
+        averageOutcomePoints,
+      },
+    });
+  } catch (error) {
+    console.error("Error fetching outcome points for all users:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+const getAllInterestCareerSupportServices = async (req, res) => {
+  try {
+    const db = getDb();
+    const usersCollection = db.collection("users");
+
+    const users = await usersCollection.find({}).toArray();
+
+    if (!users || users.length === 0) {
+      return res.status(404).json({ message: "No users found" });
+    }
+
+    let totalOutcomePoints = 0;
+    let totalUsers = 0;
+
+    for (const user of users) {
+      const question11Response = user.questionResponses.find((response) => response.questionId === "11");
+      const question13Response = user.questionResponses.find((response) => response.questionId === "13");
+      const question10Response = user.questionResponses.find((response) => response.questionId === "10");
+
+      let q11OutcomePoints = 0;
+      let q13OutcomePoints = 0;
+      let q10OutcomePoints = 0;
+
+      if (question11Response) {
+        const option = question11Response.optionSelected[0];
+        const question11 = await db.collection("questions").findOne({ questionId: "11" });
+        const option11 = question11.options.find((opt) => opt.optionId === option);
+        q11OutcomePoints = option11 ? option11.outcomePoint : 0;
+      }
+
+      if (question13Response) {
+        const option = question13Response.optionSelected[0];
+        const question13 = await db.collection("questions").findOne({ questionId: "13" });
+        const option13 = question13.options.find((opt) => opt.optionId === option);
+        q13OutcomePoints = option13 ? option13.outcomePoint : 0;
+      }
+
+      if (question10Response) {
+        const option = question10Response.optionSelected[0];
+        const question10 = await db.collection("questions").findOne({ questionId: "10" });
+        const option10 = question10.options.find((opt) => opt.optionId === option);
+        q10OutcomePoints = option10 ? option10.outcomePoint : 0;
+      }
+
+      const question11Outcome = q11OutcomePoints * 0.4;
+      const question13Outcome = q13OutcomePoints * 0.4;
+      const question10Outcome = q10OutcomePoints * 0.2;
+
+      const userOutcomePoints = question11Outcome + question13Outcome + question10Outcome;
+
+      totalOutcomePoints += userOutcomePoints;
+      totalUsers += 1;
+    }
+
+    const averageOutcomePoints = totalOutcomePoints / totalUsers;
+
+    res.status(200).json({
+      message: "Outcome points for Interest Career Support Services calculated successfully for all users",
+      data: {
+        totalUsers,
+        totalOutcomePoints,
+        averageOutcomePoints,
+      },
+    });
+  } catch (error) {
+    console.error("Error fetching outcome points for all users:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+module.exports = {addQuestion, getAllQuestion, getQuestionById, storeAnswerById , getSurveyResultsByQuestionId , getSurveyStatistics , getLimitedUnderstandingJobOpportunities , getLackOfSkillsAndPreparedness , getConfusionAboutBranchesAndAlignment , getInternshipSelectionForJobReadiness , getCombinedOutcomePoints , getUniversityLimitedUnderstandingJobOpportunities , getUniversityLackOfSkillsAndPreparedness , getUniversityConfusionAboutBranchesAndAlignment , getUniversityInternshipSelectionForJobReadiness , getAllLimitedUnderstandingJobOpportunities , getAllLackOfSkillsAndPreparedness,getAllConfusionAboutBranchesAndAlignment ,getAllInternshipSelectionForJobReadiness,getUniversityMismatchSalaryExpectations, getUniversityInterestCareerSupportServices, getAllMismatchSalaryExpectations, getAllInterestCareerSupportServices , getMismatchSalaryExpectations , getInterestCareerSupportServices};
