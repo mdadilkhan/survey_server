@@ -2030,5 +2030,43 @@ const getLeastPreferredCareerChoices = async (req, res) => {
   }
 };
 
+const getAllSurveyStatistics = async (req, res) => {
+  try {
+    const db = getDb();
+    const usersCollection = db.collection("users");
 
-module.exports = {addQuestion, getAllQuestion, getQuestionById, storeAnswerById , getSurveyResultsByQuestionId , getSurveyStatistics , getLimitedUnderstandingJobOpportunities , getLackOfSkillsAndPreparedness , getConfusionAboutBranchesAndAlignment , getInternshipSelectionForJobReadiness , getCombinedOutcomePoints , getUniversityLimitedUnderstandingJobOpportunities , getUniversityLackOfSkillsAndPreparedness , getUniversityConfusionAboutBranchesAndAlignment , getUniversityInternshipSelectionForJobReadiness , getAllLimitedUnderstandingJobOpportunities , getAllLackOfSkillsAndPreparedness,getAllConfusionAboutBranchesAndAlignment ,getAllInternshipSelectionForJobReadiness,getUniversityMismatchSalaryExpectations, getUniversityInterestCareerSupportServices, getAllMismatchSalaryExpectations, getAllInterestCareerSupportServices , getMismatchSalaryExpectations , getInterestCareerSupportServices , getAllSurveyResultsByQuestionId , getUniversitySurveyResultsByQuestionId , getMostPreferredCareerChoices , getLeastPreferredCareerChoices};
+    // Find users who have at least one response in questionResponses
+    const users = await usersCollection.find({
+      questionResponses: { $exists: true, $not: { $size: 0 } }
+    }).toArray();
+
+    // Initialize counters
+    let totalResponses = 0;
+    let undergraduateCount = 0;
+    let postgraduateCount = 0;
+
+    // Loop through users and count based on course type
+    users.forEach(user => {
+      totalResponses += 1; // Count each user who has at least one response
+      if (user.course === "undergraduate") {
+        undergraduateCount += 1;
+      } else if (user.course === "postgraduate") {
+        postgraduateCount += 1;
+      }
+    });
+
+    // Construct response
+    res.status(200).json({
+      message: "Survey statistics retrieved successfully",
+      totalResponses: totalResponses, // Count of total responses
+      undergraduate: undergraduateCount,
+      postgraduate: postgraduateCount
+    });
+  } catch (error) {
+    console.error("Error fetching survey statistics:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+
+module.exports = {addQuestion, getAllQuestion, getQuestionById, storeAnswerById , getSurveyResultsByQuestionId , getSurveyStatistics , getLimitedUnderstandingJobOpportunities , getLackOfSkillsAndPreparedness , getConfusionAboutBranchesAndAlignment , getInternshipSelectionForJobReadiness , getCombinedOutcomePoints , getUniversityLimitedUnderstandingJobOpportunities , getUniversityLackOfSkillsAndPreparedness , getUniversityConfusionAboutBranchesAndAlignment , getUniversityInternshipSelectionForJobReadiness , getAllLimitedUnderstandingJobOpportunities , getAllLackOfSkillsAndPreparedness,getAllConfusionAboutBranchesAndAlignment ,getAllInternshipSelectionForJobReadiness,getUniversityMismatchSalaryExpectations, getUniversityInterestCareerSupportServices, getAllMismatchSalaryExpectations, getAllInterestCareerSupportServices , getMismatchSalaryExpectations , getInterestCareerSupportServices , getAllSurveyResultsByQuestionId , getUniversitySurveyResultsByQuestionId , getMostPreferredCareerChoices , getLeastPreferredCareerChoices , getAllSurveyStatistics};
