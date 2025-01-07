@@ -1798,25 +1798,32 @@ const getAllSurveyResultsByQuestionId = async (req, res) => {
 };
 
 const getUniversitySurveyResultsByQuestionId = async (req, res) => {
-  const { questionId, universityId } = req.body;
+  const { questionId, universityId, course, year } = req.body;
 
   try {
     const db = getDb();
 
     // Step 1: Fetch question data from the "questions" collection
-    const questionData = await db.collection("questions").findOne({ questionId: questionId });
+    const questionData = await db
+      .collection("questions")
+      .findOne({ questionId: questionId });
 
     if (!questionData) {
       return res.status(404).json({ message: "Question not found" });
     }
 
-    // Step 2: Fetch all user responses for the specific questionId and universityId from the "users" collection
+    // Step 2: Build the query to filter users
+    const query = {
+      "questionResponses.questionId": questionId,
+      school: universityId,
+    };
+    if (year) query.year = year; // Filter by year if provided
+    if (course && course !== "all") query.course = course; // Filter by course if provided
+
+    // Fetch user responses based on the query
     const users = await db
       .collection("users")
-      .find({
-        "questionResponses.questionId": questionId,
-        school: universityId,
-      }, { projection: { questionResponses: 1 } })
+      .find(query, { projection: { questionResponses: 1 } })
       .toArray();
 
     // Initialize counters for each option based on question data options
@@ -1831,9 +1838,13 @@ const getUniversitySurveyResultsByQuestionId = async (req, res) => {
     // Step 3: Aggregate responses to count the frequency of each selected option
     users.forEach((user) => {
       // Ensure questionResponses exists and is an array
-      const questionResponses = Array.isArray(user.questionResponses) ? user.questionResponses : [];
+      const questionResponses = Array.isArray(user.questionResponses)
+        ? user.questionResponses
+        : [];
 
-      const questionResponse = questionResponses.find((response) => response.questionId === questionId);
+      const questionResponse = questionResponses.find(
+        (response) => response.questionId === questionId
+      );
       if (questionResponse) {
         totalResponses += 1;
 
@@ -1849,7 +1860,10 @@ const getUniversitySurveyResultsByQuestionId = async (req, res) => {
     // Step 4: Calculate percentage for each option and merge with option details
     const optionsWithStatistics = questionData.options.map((option) => {
       const frequency = optionCounts[option.optionId] || 0;
-      const percentage = totalResponses > 0 ? ((frequency / totalResponses) * 100).toFixed(2) : "0.00";
+      const percentage =
+        totalResponses > 0
+          ? ((frequency / totalResponses) * 100).toFixed(2)
+          : "0.00";
 
       return {
         optionId: option.optionId,
@@ -1862,7 +1876,8 @@ const getUniversitySurveyResultsByQuestionId = async (req, res) => {
 
     // Step 5: Send response with question details and calculated statistics
     res.status(200).json({
-      message: "Question data and university-specific survey results retrieved successfully",
+      message:
+        "Question data and university-specific survey results retrieved successfully",
       questionId,
       questionText: questionData.questionText,
       selectionType: questionData.selectionType,
@@ -2030,6 +2045,172 @@ const getLeastPreferredCareerChoices = async (req, res) => {
   }
 };
 
+const getMostPreferredCareerChoicesByUniversity = async (req, res) => {
+  const { universityId, course, year } = req.body; // Additional filters
+
+  try {
+    const db = getDb();
+    const questionId = "2";
+
+    // Step 1: Fetch question data from the "questions" collection
+    const questionData = await db.collection("questions").findOne({ questionId: questionId });
+
+    if (!questionData) {
+      return res.status(404).json({ message: "Question not found" });
+    }
+
+    // Step 2: Build the query with additional filters
+    const query = {
+      "questionResponses.questionId": questionId,
+      school: universityId,
+    };
+    if (course && course !== "all") query.course = course;
+    if (year) query.year = year;
+
+    // Fetch user responses based on the query
+    const users = await db.collection("users").find(query, { projection: { questionResponses: 1 } }).toArray();
+
+    // Initialize counters for each option based on question data options
+    const optionCounts = {};
+    questionData.options.forEach(option => {
+      optionCounts[option.optionId] = 0;
+    });
+
+    let totalResponses = 0;
+
+    // Aggregate responses to count the frequency of each selected option
+    users.forEach(user => {
+      const questionResponse = user.questionResponses.find(response => response.questionId === questionId);
+      if (questionResponse) {
+        totalResponses += 1;
+        questionResponse.optionSelected.forEach(optionId => {
+          if (optionCounts.hasOwnProperty(optionId)) {
+            optionCounts[optionId] += 1;
+          }
+        });
+      }
+    });
+
+    // Calculate percentage for each option and merge with option details
+    const optionsWithStatistics = questionData.options.map(option => {
+      const frequency = optionCounts[option.optionId] || 0;
+      const percentage = totalResponses > 0 ? ((frequency / totalResponses) * 100).toFixed(2) : "0.00";
+
+      return {
+        optionId: option.optionId,
+        optionText: option.optionText,
+        optionPoint: option.optionPoint,
+        optionFrequency: frequency,
+        percentage: parseFloat(percentage),
+      };
+    });
+
+    // Sort options by percentage in descending order and take the top 4
+    const topOptions = optionsWithStatistics
+      .sort((a, b) => b.percentage - a.percentage)
+      .slice(0, 4);
+
+    // Send response with question details and top 4 calculated statistics
+    res.status(200).json({
+      message: "Top 4 career choices retrieved successfully",
+      questionId,
+      questionText: questionData.questionText,
+      selectionType: questionData.selectionType,
+      universityId,
+      course,
+      year,
+      totalResponses,
+      topOptions,
+    });
+  } catch (error) {
+    console.error("Error fetching top career choices:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+const getLeastPreferredCareerChoicesByUniversity = async (req, res) => {
+  const { universityId, course, year } = req.body; // Additional filters
+
+  try {
+    const db = getDb();
+    const questionId = "3";
+
+    // Step 1: Fetch question data from the "questions" collection
+    const questionData = await db.collection("questions").findOne({ questionId: questionId });
+
+    if (!questionData) {
+      return res.status(404).json({ message: "Question not found" });
+    }
+
+    // Step 2: Build the query with additional filters
+    const query = {
+      "questionResponses.questionId": questionId,
+      school: universityId,
+    };
+    if (course && course !== "all") query.course = course;
+    if (year) query.year = year;
+
+    // Fetch user responses based on the query
+    const users = await db.collection("users").find(query, { projection: { questionResponses: 1 } }).toArray();
+
+    // Initialize counters for each option based on question data options
+    const optionCounts = {};
+    questionData.options.forEach(option => {
+      optionCounts[option.optionId] = 0;
+    });
+
+    let totalResponses = 0;
+
+    // Aggregate responses to count the frequency of each selected option
+    users.forEach(user => {
+      const questionResponse = user.questionResponses.find(response => response.questionId === questionId);
+      if (questionResponse) {
+        totalResponses += 1;
+        questionResponse.optionSelected.forEach(optionId => {
+          if (optionCounts.hasOwnProperty(optionId)) {
+            optionCounts[optionId] += 1;
+          }
+        });
+      }
+    });
+
+    // Calculate percentage for each option and merge with option details
+    const optionsWithStatistics = questionData.options.map(option => {
+      const frequency = optionCounts[option.optionId] || 0;
+      const percentage = totalResponses > 0 ? ((frequency / totalResponses) * 100).toFixed(2) : "0.00";
+
+      return {
+        optionId: option.optionId,
+        optionText: option.optionText,
+        optionPoint: option.optionPoint,
+        optionFrequency: frequency,
+        percentage: parseFloat(percentage),
+      };
+    });
+
+    // Sort options by percentage in ascending order and take the top 4
+    const leastPreferredOptions = optionsWithStatistics
+      .sort((a, b) => a.percentage - b.percentage)
+      .slice(0, 4);
+
+    // Send response with question details and top 4 calculated statistics
+    res.status(200).json({
+      message: "Top 4 least preferred career choices retrieved successfully",
+      questionId,
+      questionText: questionData.questionText,
+      selectionType: questionData.selectionType,
+      universityId,
+      course,
+      year,
+      totalResponses,
+      leastPreferredOptions,
+    });
+  } catch (error) {
+    console.error("Error fetching least preferred career choices:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
 const getAllSurveyStatistics = async (req, res) => {
   try {
     const db = getDb();
@@ -2069,4 +2250,4 @@ const getAllSurveyStatistics = async (req, res) => {
 };
 
 
-module.exports = {addQuestion, getAllQuestion, getQuestionById, storeAnswerById , getSurveyResultsByQuestionId , getSurveyStatistics , getLimitedUnderstandingJobOpportunities , getLackOfSkillsAndPreparedness , getConfusionAboutBranchesAndAlignment , getInternshipSelectionForJobReadiness , getCombinedOutcomePoints , getUniversityLimitedUnderstandingJobOpportunities , getUniversityLackOfSkillsAndPreparedness , getUniversityConfusionAboutBranchesAndAlignment , getUniversityInternshipSelectionForJobReadiness , getAllLimitedUnderstandingJobOpportunities , getAllLackOfSkillsAndPreparedness,getAllConfusionAboutBranchesAndAlignment ,getAllInternshipSelectionForJobReadiness,getUniversityMismatchSalaryExpectations, getUniversityInterestCareerSupportServices, getAllMismatchSalaryExpectations, getAllInterestCareerSupportServices , getMismatchSalaryExpectations , getInterestCareerSupportServices , getAllSurveyResultsByQuestionId , getUniversitySurveyResultsByQuestionId , getMostPreferredCareerChoices , getLeastPreferredCareerChoices , getAllSurveyStatistics};
+module.exports = {addQuestion, getAllQuestion, getQuestionById, storeAnswerById , getSurveyResultsByQuestionId , getSurveyStatistics , getLimitedUnderstandingJobOpportunities , getLackOfSkillsAndPreparedness , getConfusionAboutBranchesAndAlignment , getInternshipSelectionForJobReadiness , getCombinedOutcomePoints , getUniversityLimitedUnderstandingJobOpportunities , getUniversityLackOfSkillsAndPreparedness , getUniversityConfusionAboutBranchesAndAlignment , getUniversityInternshipSelectionForJobReadiness , getAllLimitedUnderstandingJobOpportunities , getAllLackOfSkillsAndPreparedness,getAllConfusionAboutBranchesAndAlignment ,getAllInternshipSelectionForJobReadiness,getUniversityMismatchSalaryExpectations, getUniversityInterestCareerSupportServices, getAllMismatchSalaryExpectations, getAllInterestCareerSupportServices , getMismatchSalaryExpectations , getInterestCareerSupportServices , getAllSurveyResultsByQuestionId , getUniversitySurveyResultsByQuestionId , getMostPreferredCareerChoices , getLeastPreferredCareerChoices , getAllSurveyStatistics , getLeastPreferredCareerChoicesByUniversity , getMostPreferredCareerChoicesByUniversity};
