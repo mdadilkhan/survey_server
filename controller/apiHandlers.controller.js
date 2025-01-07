@@ -463,7 +463,12 @@ const getAllUniversities = async (req, res) => {
       });
     }
 
-    // Return the list of universities with their total responses
+    // Sort universities: isSponsored true first, followed by isSponsored false
+    universitiesWithResponses.sort((a, b) => {
+      return b.isSponsored - a.isSponsored;
+    });
+
+    // Return the sorted list of universities with their total responses
     return res.status(200).json({
       message: "Universities fetched successfully.",
       universities: universitiesWithResponses,

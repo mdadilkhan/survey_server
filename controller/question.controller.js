@@ -129,18 +129,18 @@ const getSurveyResultsByQuestionId = async (req, res) => {
       return res.status(404).json({ message: "Question not found" });
     }
 
-    // Get the current date in YYYY-MM-DD format
     const today = new Date();
-    const todayDate = today.toISOString().split('T')[0]; // Extract date part
+    const startOfDay = new Date(today.setHours(0, 0, 0, 0)); // Start of today
+    const endOfDay = new Date(today.setHours(23, 59, 59, 999)); // End of today
 
     // Step 2: Fetch all user responses for the specific questionId from the "users" collection, filtered by date
     const users = await db
-      .collection("users")
-      .find({
-        "questionResponses.questionId": questionId,
-        updatedAt: { $regex: `^${todayDate}` }, // Match only the date part of updatedAt
-      }, { projection: { questionResponses: 1 } })
-      .toArray();
+    .collection("users")
+    .find({
+      "questionResponses.questionId": questionId,
+      updatedAt: { $gte: startOfDay, $lte: endOfDay }, // Match users updated today
+    }, { projection: { questionResponses: 1 } })
+    .toArray();
 
     // Initialize counters for each option based on question data options
     const optionCounts = {};
@@ -200,14 +200,14 @@ const getSurveyStatistics = async (req, res) => {
     const db = getDb();
     const usersCollection = db.collection("users");
 
-    // Get the current date in YYYY-MM-DD format
     const today = new Date();
-    const todayDate = today.toISOString().split('T')[0]; // Extract date part
+    const startOfDay = new Date(today.setHours(0, 0, 0, 0)); // Start of today
+    const endOfDay = new Date(today.setHours(23, 59, 59, 999)); // End of today
 
     // Find users who have at least one response in questionResponses and updated today (date only)
     const users = await usersCollection.find({
       questionResponses: { $exists: true, $not: { $size: 0 } },
-      updatedAt: { $regex: `^${todayDate}` }, // Match only the date part of updatedAt
+      updatedAt: { $gte: startOfDay, $lte: endOfDay }, // Match users updated today
     }).toArray();
 
     // Initialize counters
