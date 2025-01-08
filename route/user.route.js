@@ -1,5 +1,5 @@
 const express = require('express');
-const { getUserDetails, contactSupport, bookSlot, createOrder, verifyOrder, createSlots, getAllSlots, getStudentsByUniversity, getStudentStatistics, getUniversityWiseStudentStatistics} = require('../controller/user.controller');
+const { getUserDetails, contactSupport, bookSlot, createOrder, verifyOrder, createSlots, getAllSlots, getStudentsByUniversity, getStudentStatistics, getUniversityWiseStudentStatistics, getTodayUsers} = require('../controller/user.controller');
 // Import the controllers
 
 
@@ -18,6 +18,6 @@ userRouter.get('/getAllSlots', getAllSlots);
 userRouter.get('/user/getStudentsByUniversity', getStudentsByUniversity);
 userRouter.get('/user/getStudentStatistics', getStudentStatistics);
 userRouter.get('/user/getUniversityWiseStudentStatistics', getUniversityWiseStudentStatistics);
-
+userRouter.get('/user/getTodayUsers', getTodayUsers);
 // Export the router
 module.exports = userRouter;

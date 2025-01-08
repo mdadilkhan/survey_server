@@ -498,6 +498,36 @@ const getUniversityWiseStudentStatistics = async (req, res) => {
   }
 };
 
+
+const getTodayUsers = async (req, res) => {
+  try {
+    const db = getDb();
+
+    // Get the current date in UTC
+    const now = new Date();
+    const startOfDay = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), 0, 0, 0));
+    const endOfDay = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), 23, 59, 59, 999));
+
+    // Query to find users created today
+    const users = await db.collection("users").find({
+      createdAt: {
+        $gte: startOfDay,
+        $lte: endOfDay,
+      },
+    }).toArray();
+
+    return res.status(200).json({
+      message: "Users created today retrieved successfully.",
+      users,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      message: "Internal Server Error",
+      error: error.toString(),
+    });
+  }
+};
+
 module.exports = {
   getUserDetails,
   contactSupport,
@@ -508,5 +538,6 @@ module.exports = {
   getAllSlots,
   getStudentsByUniversity,
   getStudentStatistics,
-  getUniversityWiseStudentStatistics
+  getUniversityWiseStudentStatistics,
+  getTodayUsers
 };
