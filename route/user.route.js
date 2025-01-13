@@ -15,7 +15,7 @@ userRouter.post('/payment/createOrder', createOrder);
 userRouter.post('/payment/verifyOrder', verifyOrder);
 userRouter.post('/createSlots', createSlots);
 userRouter.get('/getAllSlots', getAllSlots);
-userRouter.get('/user/getStudentsByUniversity', getStudentsByUniversity);
+userRouter.get('/user/getStudentsByUniversity/:universityId', getStudentsByUniversity);
 userRouter.get('/user/getStudentStatistics', getStudentStatistics);
 userRouter.get('/user/getUniversityWiseStudentStatistics', getUniversityWiseStudentStatistics);
 userRouter.get('/user/getTodayUsers', getTodayUsers);
