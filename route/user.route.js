@@ -1,6 +1,5 @@
 const express = require('express');
 const { getUserDetails, contactSupport, bookSlot, createOrder, verifyOrder, createSlots, getAllSlots, getStudentsByUniversity, getStudentStatistics, getUniversityWiseStudentStatistics, getTodayUsers, Usersdetails, getAlluser, deleteUser} = require('../controller/user.controller');
-// Import the controllers
 const userRouter = express.Router();
 userRouter.get('/getUserDetails/:id', getUserDetails);
 userRouter.post('/bookslot', bookSlot);

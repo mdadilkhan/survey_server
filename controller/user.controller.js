@@ -408,32 +408,52 @@ const getAllSlots = async (req, res) => {
 };
 
 const getStudentsByUniversity = async (req, res) => {
-  const { universityId } = req.params; // Assuming universityId is passed as a request parameter
+  const { universityId } = req.params;
+  const page = parseInt(req.query.page) || 1; // Default to page 1 if not provided
+  const pageSize = parseInt(req.query.pageSize) || 10; // Default to 10 items per page
 
   try {
     const db = getDb();
     const usersCollection = db.collection("users");
 
-    // Fetch all students from the specified university with selected fields
-    const students = await usersCollection.find(
-      { school: new ObjectId(universityId) },
-      { projection: { name: 1, email: 1, phone: 1, course: 1, year: 1 } }
-    ).toArray();
+    // Calculate the total number of students for the university
+    const totalStudents = await usersCollection.countDocuments({
+      school: new ObjectId(universityId),
+    });
 
-    if (!students || students.length === 0) {
+    if (totalStudents === 0) {
       return res.status(404).json({ message: "No students found for the specified university" });
     }
 
-    // Return the list of students
+    // Calculate the start and end indexes for the requested page
+    const startIndex = (page - 1) * pageSize;
+
+    // Fetch paginated students with selected fields
+    const students = await usersCollection
+      .find(
+        { school: new ObjectId(universityId) },
+        { projection: { name: 1, email: 1, phone: 1, course: 1, year: 1 } }
+      )
+      .skip(startIndex)
+      .limit(pageSize)
+      .toArray();
+
+    // Calculate the total number of pages
+    const totalPages = Math.ceil(totalStudents / pageSize);
+
+    // Return the paginated list of students and total pages
     res.status(200).json({
-      message: "Students fetched successfully",
+      message: "Students fetchedsss successfully",
       data: students,
+      totalPages,
+      currentPage: page,
     });
   } catch (error) {
     console.error("Error fetching students by university:", error);
     res.status(500).json({ message: "Server error" });
   }
 };
+
 
 const getStudentStatistics = async (req, res) => {
   try {
