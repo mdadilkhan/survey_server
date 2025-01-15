@@ -2778,6 +2778,35 @@ const getCounterByUniversityWise = async (req, res) => {
   }
 };
 
+const updateSchoolToObjectId = async (req, res) => {
+  try {
+    const db = getDb();
+
+    // Define the ObjectId you want to set for "Amity"
+    const amityObjectId = new ObjectId("6776287ec8d0d16564dcba7d");
+
+    // Perform the update operation
+    const result = await db.collection("users").updateMany(
+      { school: { $regex: /amity/i } }, // Match "Amity" case-insensitively
+      { $set: { school: amityObjectId } } // Update the school field to ObjectId
+    );
+
+    // Respond with the result of the update operation
+    return res.status(200).json({
+      message: "School field updated successfully for matching records.",
+      data: {
+        matchedCount: result.matchedCount, // Number of documents matched
+        modifiedCount: result.modifiedCount, // Number of documents updated
+      },
+    });
+  } catch (error) {
+    return res.status(500).json({
+      message: "Internal Server Error",
+      error: error.toString(),
+    });
+  }
+};
+
 
 module.exports = {
   addQuestion,
@@ -2813,4 +2842,5 @@ module.exports = {
   getLeastPreferredCareerChoicesByUniversity,
   getMostPreferredCareerChoicesByUniversity,
   getCounterByUniversityWise,
+  updateSchoolToObjectId
 };
