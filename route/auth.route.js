@@ -18,7 +18,7 @@ authRouter.post('/auth/insertEmail',insertEmail)
 authRouter.post('/university/addUniversity',addUniversity)
 authRouter.get('/university/getAllUniversity',getAllUniversities)
 authRouter.post('/university/editUniversity',editUniversity)
-authRouter.get('/university/deleteUniversity/:universityId',deleteUniversity)
+authRouter.get('/university/deleteUniversity/:id',deleteUniversity)
 
 // Export the router
 module.exports = authRouter;

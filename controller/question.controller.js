@@ -898,7 +898,7 @@ const getUniversityLimitedUnderstandingJobOpportunities = async (req, res) => {
       return res.status(400).json({ message: "University ID is required" });
     }
 
-    const query = { school: universityId };
+    const query = { school: new ObjectId(universityId) };
     if (year) query.year = year;
     if (course && course !== "all") query.course = course;
 
@@ -1013,7 +1013,7 @@ const getUniversityLackOfSkillsAndPreparedness = async (req, res) => {
       return res.status(400).json({ message: "University ID is required" });
     }
 
-    const query = { school: universityId };
+    const query = { school: new ObjectId(universityId) };
     if (year) query.year = year;
     if (course && course !== "all") query.course = course;
 
@@ -1123,7 +1123,7 @@ const getUniversityConfusionAboutBranchesAndAlignment = async (req, res) => {
       return res.status(400).json({ message: "University ID is required" });
     }
 
-    const query = { school: universityId };
+    const query = { school: new ObjectId(universityId) };
     if (year) query.year = year;
     if (course && course !== "all") query.course = course;
 
@@ -1233,7 +1233,7 @@ const getUniversityInternshipSelectionForJobReadiness = async (req, res) => {
       return res.status(400).json({ message: "University ID is required" });
     }
 
-    const query = { school: universityId };
+    const query = { school: new ObjectId(universityId) };
     if (year) query.year = year;
     if (course && course !== "all") query.course = course;
 
@@ -1780,7 +1780,7 @@ const getUniversityMismatchSalaryExpectations = async (req, res) => {
     const db = getDb();
     const usersCollection = db.collection("users");
 
-    const query = { school: universityId };
+    const query = { school: new ObjectId(universityId) };
     if (year) query.year = year;
     if (course && course !== "all") query.course = course;
 
@@ -1868,7 +1868,7 @@ const getUniversityInterestCareerSupportServices = async (req, res) => {
     const db = getDb();
     const usersCollection = db.collection("users");
 
-    const query = { school: universityId };
+    const query = { school: new ObjectId(universityId) };
     if (year) query.year = year;
     if (course && course !== "all") query.course = course;
 
@@ -2241,7 +2241,7 @@ const getUniversitySurveyResultsByQuestionId = async (req, res) => {
     // Step 1: Fetch question data from the "questions" collection
     const questionData = await db
       .collection("questions")
-      .findOne({ questionId: questionId });
+      .findOne({ questionId: questionId.toString });
 
     if (!questionData) {
       return res.status(404).json({ message: "Question not found" });
@@ -2250,7 +2250,7 @@ const getUniversitySurveyResultsByQuestionId = async (req, res) => {
     // Step 2: Build the query to filter users
     const query = {
       "questionResponses.questionId": questionId,
-      school: universityId,
+      school: new ObjectId(universityId),
     };
     if (year) query.year = year; // Filter by year if provided
     if (course && course !== "all") query.course = course; // Filter by course if provided
@@ -2520,7 +2520,7 @@ const getMostPreferredCareerChoicesByUniversity = async (req, res) => {
     // Step 2: Build the query with additional filters
     const query = {
       "questionResponses.questionId": questionId,
-      school: universityId,
+      school: new ObjectId(universityId),
     };
     if (course && course !== "all") query.course = course;
     if (year) query.year = year;
@@ -2572,7 +2572,7 @@ const getMostPreferredCareerChoicesByUniversity = async (req, res) => {
     });
 
     // Sort options by percentage in descending order and take the top 4
-    const topOptions = optionsWithStatistics
+    const Options = optionsWithStatistics
       .sort((a, b) => b.percentage - a.percentage)
       .slice(0, 4);
 
@@ -2586,7 +2586,7 @@ const getMostPreferredCareerChoicesByUniversity = async (req, res) => {
       course,
       year,
       totalResponses,
-      topOptions,
+      Options,
     });
   } catch (error) {
     console.error("Error fetching top career choices:", error);
@@ -2613,7 +2613,7 @@ const getLeastPreferredCareerChoicesByUniversity = async (req, res) => {
     // Step 2: Build the query with additional filters
     const query = {
       "questionResponses.questionId": questionId,
-      school: universityId,
+      school: new ObjectId(universityId),
     };
     if (course && course !== "all") query.course = course;
     if (year) query.year = year;
@@ -2665,7 +2665,7 @@ const getLeastPreferredCareerChoicesByUniversity = async (req, res) => {
     });
 
     // Sort options by percentage in ascending order and take the top 4
-    const leastPreferredOptions = optionsWithStatistics
+    const Options = optionsWithStatistics
       .sort((a, b) => a.percentage - b.percentage)
       .slice(0, 4);
 
@@ -2679,7 +2679,7 @@ const getLeastPreferredCareerChoicesByUniversity = async (req, res) => {
       course,
       year,
       totalResponses,
-      leastPreferredOptions,
+      Options,
     });
   } catch (error) {
     console.error("Error fetching least preferred career choices:", error);
@@ -2744,7 +2744,7 @@ const getCounterByUniversityWise = async (req, res) => {
 
     // Check if no users were found
     if (users.length === 0) {
-      return res.status(404).json({
+      return res.status(200).json({
         message: "No users found for the given university ID.",
         data: {
           totalResponse: 0,
@@ -2777,6 +2777,7 @@ const getCounterByUniversityWise = async (req, res) => {
     });
   }
 };
+
 
 module.exports = {
   addQuestion,
@@ -2811,5 +2812,5 @@ module.exports = {
   getAllSurveyStatistics,
   getLeastPreferredCareerChoicesByUniversity,
   getMostPreferredCareerChoicesByUniversity,
-  getCounterByUniversityWise
+  getCounterByUniversityWise,
 };
