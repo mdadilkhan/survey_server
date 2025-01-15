@@ -416,7 +416,7 @@ const getStudentsByUniversity = async (req, res) => {
 
     // Fetch all students from the specified university with selected fields
     const students = await usersCollection.find(
-      { school: universityId },
+      { school: new ObjectId(universityId) },
       { projection: { name: 1, email: 1, phone: 1, course: 1, year: 1 } }
     ).toArray();
 
@@ -471,13 +471,13 @@ const getUniversityWiseStudentStatistics = async (req, res) => {
     const usersCollection = db.collection("users");
 
     // Fetch total number of students for the university
-    const totalStudents = await usersCollection.countDocuments({ school: universityId });
+    const totalStudents = await usersCollection.countDocuments({ school: new ObjectId(universityId) });
 
     // Fetch total number of postgraduate students for the university
-    const totalPostgrad = await usersCollection.countDocuments({ school: universityId, course: "postgraduate" });
+    const totalPostgrad = await usersCollection.countDocuments({ school: new ObjectId(universityId), course: "postgraduate" });
 
     // Fetch total number of undergraduate students for the university
-    const totalUndergrad = await usersCollection.countDocuments({ school: universityId, course: "undergraduate" });
+    const totalUndergrad = await usersCollection.countDocuments({ school: new ObjectId(universityId), course: "undergraduate" });
 
     if (totalStudents === 0) {
       return res.status(404).json({ message: "No students found for the specified university" });
@@ -527,6 +527,83 @@ const getTodayUsers = async (req, res) => {
     });
   }
 };
+const Usersdetails = async (req, res) => {
+  try {
+    const db = getDb();
+    const { userId } = req.params; // Extract userId from request parameters
+
+    // Query to find the user by their ObjectId
+    const users = await db.collection("users1").findOne({
+      _id: new ObjectId(userId), // Ensure userId is converted to ObjectId
+    });
+
+    if (!users) {
+      return res.status(404).json({
+        message: "User not found",
+      });
+    }
+
+    return res.status(200).json({
+      users,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      message: "Internal Server Error",
+      error: error.toString(),
+    });
+  }
+};
+
+const getAlluser=   async (req, res) => {
+  const { schoolId } = req.params;
+  const db = getDb();
+  console.log(schoolId,"schoolId");
+  
+
+  try {
+    // Ensure the schoolId is converted to an ObjectId
+    const users = await db
+      .collection("users")
+      .find({ school: new ObjectId(schoolId) })
+      .toArray();
+
+    if (users.length === 0) {
+      return res.status(404).json({ message: "No users found for this school ID" });
+    }
+    res.status(200).json(users);
+  } catch (error) {
+    console.error("Error fetching users:", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+const deleteUser = async (req, res) => {
+  const { userId } = req.params;
+  const db = getDb();
+
+  try {
+    // Ensure the userId is converted to an ObjectId
+    const studentObjectId = new ObjectId(userId);
+
+    // Find the student data in the users collection
+    const student = await db.collection("users").findOne({ _id: studentObjectId });
+
+    if (!student) {
+      return res.status(404).json({ message: "Student not found in the users collection" });
+    }
+
+    // Insert the student data into the inactiveusers collection
+    await db.collection("inactiveusers").insertOne(student);
+
+    // Delete the student data from the users collection
+    await db.collection("users").deleteOne({ _id: studentObjectId });
+
+    res.status(200).json({ message: "Student moved to Delete successfully" });
+  } catch (error) {
+    console.error("Error processing student:", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
 
 module.exports = {
   getUserDetails,
@@ -539,5 +616,7 @@ module.exports = {
   getStudentsByUniversity,
   getStudentStatistics,
   getUniversityWiseStudentStatistics,
-  getTodayUsers
+  getTodayUsers,Usersdetails,
+  getAlluser,
+  deleteUser
 };

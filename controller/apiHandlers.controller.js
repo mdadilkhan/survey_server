@@ -481,6 +481,8 @@ const getAllUniversities = async (req, res) => {
 
 const editUniversity = async (req, res) => {
   const { universityName, state ,id} = req.body;
+  console.log( universityName, state ,id,"hello in edit section ");
+  
   const db = getDb();
 
   try {
@@ -491,7 +493,7 @@ const editUniversity = async (req, res) => {
       { returnDocument: "after" }
     );
 
-    if (!updatedUniversity.value) {
+    if (!updatedUniversity) {
       return res.status(404).json({ message: "University not found." });
     }
 
@@ -512,6 +514,7 @@ const deleteUniversity = async (req, res) => {
   try {
     // Delete the university document
     const deletedUniversity = await db.collection("university").deleteOne({ _id: new ObjectId(id) });
+console.log("kkkk",id,deletedUniversity);
 
     if (deletedUniversity.deletedCount === 0) {
       return res.status(404).json({ message: "University not found." });
