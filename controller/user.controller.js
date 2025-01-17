@@ -409,7 +409,7 @@ const getAllSlots = async (req, res) => {
 
 const getStudentsByUniversity = async (req, res) => {
   const { universityId } = req.params;
-  const page = parseInt(req.query.page) || 1; // Default to page 1 if not provided
+  const page = parseInt(req.query.page) || 1; // Default to page 1 if not provide d
   const pageSize = parseInt(req.query.pageSize) || 10; // Default to 10 items per page
 
   try {

@@ -479,6 +479,40 @@ const getAllUniversities = async (req, res) => {
   }
 };
 
+const getUniversityDetails = async (req, res) => {
+  const { universityId } = req.params; // Get universityId from request parameters
+  const db = getDb();
+
+  try {
+    // Fetch the university based on the provided universityId
+    const university = await db.collection("university").findOne({
+      _id: new ObjectId(universityId), // Ensure universityId is an ObjectId
+    });
+
+    if (!university) {
+      return res.status(404).json({ message: "University not found" });
+    }
+
+    // Count the total number of users with at least one questionResponse for the current university
+    const totalResponses = await db.collection("users").countDocuments({
+      school: university._id, // Assuming university._id is the unique identifier for a university
+      "questionResponses.0": { $exists: true }, // Check if questionResponses array is not empty
+    });
+
+    // Return the university details with total responses
+    return res.status(200).json({
+      message: "University details fetched successfully.",
+      university: {
+        ...university,
+        totalResponses,
+      },
+    });
+  } catch (error) {
+    console.error("Error fetching university details:", error);
+    return res.status(500).json({ message: "Server error" });
+  }
+};
+
 const editUniversity = async (req, res) => {
   const { universityName, state ,id} = req.body;
   console.log( universityName, state ,id,"hello in edit section ");
@@ -538,5 +572,6 @@ module.exports = {
   addUniversity,
   getAllUniversities,
   editUniversity,
-  deleteUniversity
+  deleteUniversity,
+  getUniversityDetails
 };

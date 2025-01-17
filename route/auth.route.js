@@ -2,7 +2,7 @@ const express = require('express');
 
 // Import the controllers
 const { userSignup } = require('../controller/auth.controller');
-const {sendOtpWithSms,sendOtpWithEmail,validateOTP,insertEmail,register, login, addUniversity, getAllUniversities, editUniversity, deleteUniversity} = require('../controller/apiHandlers.controller')
+const {sendOtpWithSms,sendOtpWithEmail,validateOTP,insertEmail,register, login, addUniversity, getAllUniversities, editUniversity, deleteUniversity, getUniversityDetails} = require('../controller/apiHandlers.controller')
 
 // Create a new router
 const authRouter = express.Router();
@@ -19,6 +19,7 @@ authRouter.post('/university/addUniversity',addUniversity)
 authRouter.get('/university/getAllUniversity',getAllUniversities)
 authRouter.post('/university/editUniversity',editUniversity)
 authRouter.get('/university/deleteUniversity/:id',deleteUniversity)
+authRouter.get('/university/universityDetails/:universityId',getUniversityDetails)
 
 // Export the router
 module.exports = authRouter;
